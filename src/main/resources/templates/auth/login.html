@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head('Вход')}"></head>
+<body>
+    <div class="auth-wrapper">
+        <div class="glass-card">
+            <h1 class="auth-title">Добро пожаловать</h1>
+            <p class="auth-subtitle">Войдите в систему Otklik</p>
+
+            <div th:if="${param.error}" class="alert alert-error">
+                Неверное имя пользователя или пароль.
+            </div>
+            <div th:if="${param.logout}" class="alert alert-success">
+                Вы успешно вышли из системы.
+            </div>
+            <div th:if="${param.registered}" class="alert alert-success">
+                Регистрация успешна! Теперь вы можете войти.
+            </div>
+
+            <form th:action="@{/login}" method="post">
+                <div class="form-group">
+                    <label for="username" class="form-label">Имя пользователя</label>
+                    <input type="text" id="username" name="username" class="form-control" required autofocus>
+                </div>
+                
+                <div class="form-group">
+                    <label for="password" class="form-label">Пароль</label>
+                    <input type="password" id="password" name="password" class="form-control" required>
+                </div>
+                
+                <button type="submit" class="btn mt-2">Войти</button>
+            </form>
+
+            <div class="text-center mt-4 text-muted">
+                <small>Вход возможен только для зарегистрированных пользователей. Регистрация требует инвайт-код.</small>
+                <div class="mt-2">
+                    <a th:href="@{/register}">Нет аккаунта? Зарегистрироваться по инвайту</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head('Главная')}"></head>
+<body>
+    <div class="container" style="padding-top: 50px;">
+        <div class="glass-card" style="max-width: 800px; margin: 0 auto;">
+            <h1>Добро пожаловать в Otklik</h1>
+            <p class="mt-2 text-muted">Вы успешно вошли в систему.</p>
+            
+            <div class="mt-4" style="background: rgba(0,0,0,0.2); padding: 20px; border-radius: 8px;">
+                <p><strong>Пользователь:</strong> <span th:text="${username}">User</span></p>
+                <p><strong>Роль:</strong> <span th:text="${role}">ROLE</span></p>
+            </div>
+
+            <div class="mt-4">
+                <form th:action="@{/logout}" method="post" style="display:inline;">
+                    <button type="submit" class="btn" style="width: auto; background-color: var(--border-color);">Выйти</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
