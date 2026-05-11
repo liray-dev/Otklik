@@ -50,7 +50,7 @@ public class SecurityConfig {
                         .requestMatchers("/css/**", "/js/**", "/images/**", "/favicon.ico").permitAll()
                         .requestMatchers("/login", "/register", "/error").permitAll()
                         .requestMatchers("/admin/**").hasAuthority("ADMIN")
-                        .requestMatchers("/organizer/**").hasAnyAuthority("ORGANIZER", "ADMIN")
+                        .requestMatchers("/organizer/**").hasAnyAuthority("ORGANIZER", "ADMIN", "EXPERT")
                         .requestMatchers("/expert/**").hasAnyAuthority("EXPERT", "ORGANIZER", "ADMIN")
                         .requestMatchers("/student/**").hasAnyAuthority("STUDENT", "ADMIN")
                         .anyRequest().authenticated()
