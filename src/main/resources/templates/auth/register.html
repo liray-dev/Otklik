@@ -19,7 +19,7 @@
         <form th:action="@{/register}" th:object="${registrationRequest}" method="post">
             <div class="field">
                 <label class="field__label" for="inviteCode">Инвайт-код</label>
-                <input id="inviteCode" th:field="*{inviteCode}" type="text" class="input" placeholder="MASTER-ADMIN-INVITE-777" required autofocus>
+                <input id="inviteCode" th:field="*{inviteCode}" type="text" class="input" placeholder="код приглашения" required autofocus>
                 <span class="field__error" th:if="${#fields.hasErrors('inviteCode')}" th:errors="*{inviteCode}"></span>
             </div>
             <div class="field">

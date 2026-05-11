@@ -78,7 +78,11 @@
                     <div class="field">
                         <label class="field__label">Роль</label>
                         <select name="role" class="select" required>
-                            <option th:each="r : ${roles}" th:value="${r}" th:text="${r}"></option>
+                            <option value="" disabled selected>— выберите роль —</option>
+                            <option value="ADMIN">ADMIN</option>
+                            <option value="ORGANIZER">ORGANIZER</option>
+                            <option value="EXPERT">EXPERT</option>
+                            <option value="STUDENT">STUDENT</option>
                         </select>
                     </div>
                     <div class="field">
