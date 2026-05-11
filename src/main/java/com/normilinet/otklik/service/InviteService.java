@@ -15,20 +15,28 @@ import java.util.UUID;
 public class InviteService {
 
     private final InviteRepository inviteRepository;
+    private final TagService tagService;
 
     @Transactional
     public Invite createInvite(String code, Role role, int usagesLimit, LocalDateTime validUntil) {
+        return createInvite(code, role, usagesLimit, validUntil, java.util.Collections.emptyList());
+    }
+
+    @Transactional
+    public Invite createInvite(String code, Role role, int usagesLimit, LocalDateTime validUntil,
+                               java.util.Collection<UUID> tagIds) {
         if (inviteRepository.findByCode(code).isPresent()) {
             throw new IllegalArgumentException("Invite with code " + code + " already exists");
         }
-        
+
         Invite invite = new Invite();
         invite.setCode(code);
         invite.setRole(role);
         invite.setUsagesLimit(usagesLimit);
         invite.setValidUntil(validUntil);
         invite.setActive(true);
-        
+        invite.getTags().addAll(tagService.resolveTagIds(tagIds));
+
         return inviteRepository.save(invite);
     }
 

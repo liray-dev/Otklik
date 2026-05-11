@@ -5,20 +5,13 @@
 <div class="app">
     <header th:replace="~{components/topbar :: bar(~{::nav}, null)}">
         <nav class="topbar__nav">
-            <a th:href="@{/organizer}">Обзор</a>
             <a th:href="@{/expert/queue}">Очередь</a>
+            <a th:href="@{/expert/in-progress}">В работе</a>
             <a class="is-active">Рецензирование</a>
         </nav>
     </header>
 
-    <aside th:replace="~{components/sidebar :: bar(
-        ${ { {'key':'overview','label':'Панель организатора','href':'/organizer','icon':'▦'},
-              {'key':'queue','label':'Очередь проверок','href':'/expert/queue','icon':'▤'},
-              {'key':'review','label':'Интерфейс оценки','href':'/expert/in-progress','icon':'✎'},
-              {'key':'results','label':'Панель результатов','href':'/expert/completed','icon':'▣'} } },
-        'review',
-        'Otklik',
-        'СИСТЕМА ПРОВЕРКИ')}"></aside>
+    <aside th:replace="~{components/sidebar :: bar(${roleSidebar}, 'inprogress', 'Otklik', ${roleSidebarSubtitle})}"></aside>
 
     <main class="app__main">
         <div th:if="${param.saved}" class="alert alert--ok">Черновик сохранён.</div>

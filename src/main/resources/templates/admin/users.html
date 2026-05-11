@@ -12,14 +12,7 @@
         </nav>
     </header>
 
-    <aside th:replace="~{components/sidebar :: bar(
-        ${ { {'key':'overview','label':'Обзор','href':'/admin','icon':'▦'},
-              {'key':'users','label':'Пользователи','href':'/admin/users','icon':'▤'},
-              {'key':'invites','label':'Инвайты','href':'/admin/invites','icon':'✎'},
-              {'key':'settings','label':'Настройки','href':'/admin/settings','icon':'⚙'} } },
-        'users',
-        'Otklik',
-        'АДМИНИСТРИРОВАНИЕ')}"></aside>
+    <aside th:replace="~{components/sidebar :: bar(${roleSidebar}, 'users', 'Otklik', ${roleSidebarSubtitle})}"></aside>
 
     <main class="app__main">
         <div class="page__hero">

@@ -24,6 +24,7 @@
         const resp = await fetch(autosaveUrl, { method: 'POST', body: fd, headers, credentials: 'same-origin' });
         if (!resp.ok) return null;
         const data = await resp.json().catch(() => ({}));
+        if (data.workId && switcher) switcher.dataset.workId = data.workId;
         return data.workId || null;
     }
 

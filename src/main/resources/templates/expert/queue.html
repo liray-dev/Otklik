@@ -5,23 +5,24 @@
 <div class="app">
     <header th:replace="~{components/topbar :: bar(~{::nav}, null)}">
         <nav class="topbar__nav">
-            <a th:href="@{/organizer}">Обзор</a>
-            <a th:href="@{/organizer/cycles}">Кампании</a>
             <a th:href="@{/expert/queue}" class="is-active">Очередь</a>
+            <a th:href="@{/expert/in-progress}">В работе</a>
+            <a th:href="@{/expert/completed}">Завершено</a>
         </nav>
     </header>
 
-    <aside th:replace="~{components/sidebar :: bar(
-        ${ { {'key':'overview','label':'Панель организатора','href':'/organizer','icon':'▦'},
-              {'key':'queue','label':'Очередь проверок','href':'/expert/queue','icon':'▤'},
-              {'key':'review','label':'Интерфейс оценки','href':'/expert/in-progress','icon':'✎'},
-              {'key':'results','label':'Панель результатов','href':'/expert/completed','icon':'▣'} } },
-        'queue',
-        'Otklik',
-        'СИСТЕМА ПРОВЕРКИ')}"></aside>
+    <aside th:replace="~{components/sidebar :: bar(${roleSidebar}, 'queue', 'Otklik', ${roleSidebarSubtitle})}"></aside>
 
     <main class="app__main">
+        <div class="page__hero">
+            <div>
+                <h1 class="page__title">Очередь проверок</h1>
+                <p class="page__subtitle">Работы, доступные для рецензирования по вашим тэгам.</p>
+            </div>
+        </div>
+
         <div th:if="${param.submitted}" class="alert alert--ok">Рецензия отправлена. Спасибо!</div>
+        <div th:if="${param.revision}" class="alert alert--ok">Работа отправлена студенту на доработку.</div>
 
         <div class="grid grid--3 mb-4">
             <div class="card metric-card metric-card--accent">
@@ -60,6 +61,30 @@
             <div class="row row--between">
                 <h2 style="font-size:20px;font-weight:600;">Доступные задачи</h2>
             </div>
+
+            <form th:action="@{/expert/queue}" method="get" class="card">
+                <div class="grid grid--3">
+                    <div class="profile-field">
+                        <label class="profile-field__label" for="q">Поиск по названию</label>
+                        <input id="q" name="q" class="input" th:value="${filterQ}" placeholder="например диплом">
+                    </div>
+                    <div class="profile-field">
+                        <label class="profile-field__label" for="campaign">Кампания</label>
+                        <input id="campaign" name="campaign" class="input" th:value="${filterCampaign}" placeholder="часть названия кампании">
+                    </div>
+                    <div class="profile-field" style="align-self:end;">
+                        <div class="row gap-2">
+                            <select name="sort" class="input">
+                                <option value="newest" th:selected="${filterSort == 'newest'}">Сначала новые</option>
+                                <option value="oldest" th:selected="${filterSort == 'oldest'}">Сначала старые</option>
+                                <option value="title" th:selected="${filterSort == 'title'}">По названию</option>
+                            </select>
+                            <button type="submit" class="btn btn--primary">Применить</button>
+                            <a th:href="@{/expert/queue}" class="btn btn--ghost">Сбросить</a>
+                        </div>
+                    </div>
+                </div>
+            </form>
 
             <div th:each="mw : ${availableWorks}" class="task-card">
                 <div class="task-card__head">

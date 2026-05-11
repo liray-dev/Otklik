@@ -48,6 +48,60 @@ public class OrganizerController {
     private final WorkRepository workRepository;
     private final WorkAssignmentRepository assignmentRepository;
     private final ReviewRepository reviewRepository;
+    private final com.normilinet.otklik.service.TagService tagService;
+
+    @GetMapping("/users")
+    public String users(@RequestParam(required = false) String q,
+                        @RequestParam(required = false) String role,
+                        @RequestParam(required = false) String invite,
+                        @RequestParam(required = false) UUID tag,
+                        @RequestParam(required = false) String group,
+                        Model model) {
+        List<User> users = filterUsers(q, role, invite, tag, group);
+        model.addAttribute("users", users);
+        model.addAttribute("allTags", tagService.listAll());
+        model.addAttribute("filterQ", q);
+        model.addAttribute("filterRole", role);
+        model.addAttribute("filterInvite", invite);
+        model.addAttribute("filterTag", tag);
+        model.addAttribute("filterGroup", group);
+        model.addAttribute("usersBase", "/organizer/users");
+        return "users/list";
+    }
+
+    @PostMapping("/users/tag/apply")
+    public String bulkApplyTag(@RequestParam UUID tagId,
+                               @RequestParam(value = "userIds", required = false) List<UUID> userIds,
+                               jakarta.servlet.http.HttpServletRequest req) {
+        if (userIds != null) tagService.bulkAddTag(userIds, tagId);
+        return "redirect:" + (req.getHeader("Referer") != null ? req.getHeader("Referer") : "/organizer/users");
+    }
+
+    @PostMapping("/users/tag/remove")
+    public String bulkRemoveTag(@RequestParam UUID tagId,
+                                @RequestParam(value = "userIds", required = false) List<UUID> userIds,
+                                jakarta.servlet.http.HttpServletRequest req) {
+        if (userIds != null) tagService.bulkRemoveTag(userIds, tagId);
+        return "redirect:" + (req.getHeader("Referer") != null ? req.getHeader("Referer") : "/organizer/users");
+    }
+
+    private List<User> filterUsers(String q, String role, String invite, UUID tag, String group) {
+        return userRepository.findAll().stream()
+                .filter(u -> q == null || q.isBlank()
+                        || (u.getUsername() != null && u.getUsername().toLowerCase().contains(q.toLowerCase()))
+                        || (u.getFullName() != null && u.getFullName().toLowerCase().contains(q.toLowerCase()))
+                        || (u.getEmail() != null && u.getEmail().toLowerCase().contains(q.toLowerCase())))
+                .filter(u -> role == null || role.isBlank() || u.getRole().name().equals(role))
+                .filter(u -> invite == null || invite.isBlank()
+                        || (u.getInvite() != null && u.getInvite().getCode() != null
+                            && u.getInvite().getCode().toLowerCase().contains(invite.toLowerCase())))
+                .filter(u -> tag == null
+                        || (u.getTags() != null && u.getTags().stream().anyMatch(t -> t.getId().equals(tag))))
+                .filter(u -> group == null || group.isBlank()
+                        || (u.getUniversityGroup() != null && u.getUniversityGroup().toLowerCase().contains(group.toLowerCase())))
+                .sorted(Comparator.comparing(User::getCreatedAt).reversed())
+                .toList();
+    }
 
     @GetMapping
     public String dashboard(@AuthenticationPrincipal CustomUserDetails user, Model model) {
@@ -68,7 +122,8 @@ public class OrganizerController {
     }
 
     @GetMapping("/cycles/new")
-    public String cycleNewForm() {
+    public String cycleNewForm(Model model) {
+        model.addAttribute("allTags", tagService.listAll());
         return "organizer/cycle_new";
     }
 
@@ -84,6 +139,7 @@ public class OrganizerController {
                               @RequestParam(value = "criterionWeight", required = false) List<String> criterionWeights,
                               @RequestParam(value = "criterionDescription", required = false) List<String> criterionDescriptions,
                               @RequestParam(value = "links", required = false) List<String> links,
+                              @RequestParam(value = "tagIds", required = false) List<UUID> tagIds,
                               @RequestParam(value = "files", required = false) List<MultipartFile> files) throws IOException {
         User organizer = userRepository.findByUsername(user.getUsername()).orElseThrow();
 
@@ -102,7 +158,8 @@ public class OrganizerController {
                 organizer, title, description,
                 CampaignMode.valueOf(mode),
                 AnonymityMode.valueOf(anonymity),
-                scaleMax, null, deadlineDt, criteria);
+                scaleMax, null, deadlineDt, criteria,
+                tagService.resolveTagIds(tagIds));
 
         if (files != null) {
             for (MultipartFile f : files) {
@@ -144,17 +201,41 @@ public class OrganizerController {
         return "redirect:/organizer/cycles/" + id;
     }
 
+    @GetMapping("/works/{workId}")
+    public String workDetails(@PathVariable UUID workId, Model model) {
+        Work w = workRepository.findById(workId)
+                .orElseThrow(() -> new IllegalArgumentException("Работа не найдена"));
+        List<WorkAssignment> assignments = assignmentRepository.findAllByWorkId(workId);
+        java.util.List<java.util.Map<String, Object>> reviewRows = new ArrayList<>();
+        for (WorkAssignment a : assignments) {
+            Review r = reviewRepository.findByAssignmentId(a.getId()).orElse(null);
+            java.util.Map<String, Object> row = new java.util.HashMap<>();
+            row.put("assignment", a);
+            row.put("review", r);
+            reviewRows.add(row);
+        }
+        model.addAttribute("work", w);
+        model.addAttribute("attachments", workService.getAttachments(workId));
+        model.addAttribute("reviewRows", reviewRows);
+        model.addAttribute("criteria", campaignService.getCriteriaForCampaign(w.getCampaign().getId()));
+        return "organizer/work_details";
+    }
+
     @GetMapping("/cycles/{id}/results")
     public String results(@PathVariable UUID id, Model model) {
         Campaign campaign = campaignService.getCampaignById(id);
         List<Work> works = workRepository.findAllByCampaignId(id);
         List<WorkAssignment> allAssignments = new ArrayList<>();
         for (Work w : works) {
-            allAssignments.addAll(assignmentRepository.findAllByWorkId(w.getId()));
+            for (WorkAssignment a : assignmentRepository.findAllByWorkId(w.getId())) {
+                if (a.getStatus() != AssignmentStatus.ABANDONED) allAssignments.add(a);
+            }
         }
         List<Review> reviews = new ArrayList<>();
         for (WorkAssignment a : allAssignments) {
-            reviewRepository.findByAssignmentId(a.getId()).ifPresent(reviews::add);
+            reviewRepository.findByAssignmentId(a.getId()).ifPresent(r -> {
+                if (r.getStatus() == com.normilinet.otklik.domain.enums.ReviewStatus.FINAL) reviews.add(r);
+            });
         }
 
         long total = allAssignments.size();
@@ -169,13 +250,16 @@ public class OrganizerController {
                 .divide(BigDecimal.valueOf(Math.max(1, reviews.stream().filter(r -> r.getTotalScore() != null).count())),
                         2, java.math.RoundingMode.HALF_UP);
 
-        long[] distribution = new long[campaign.getScaleMax() + 1];
+        Long[] distribution = new Long[campaign.getScaleMax() + 1];
+        for (int i = 0; i < distribution.length; i++) distribution[i] = 0L;
         for (Review r : reviews) {
             if (r.getTotalScore() != null) {
                 int bucket = Math.min(campaign.getScaleMax(), r.getTotalScore().intValue());
                 distribution[bucket]++;
             }
         }
+        long maxDistribution = 0L;
+        for (Long b : distribution) if (b != null && b > maxDistribution) maxDistribution = b;
 
         long inQueue = works.stream().filter(w -> w.getStatus() == WorkStatus.IN_QUEUE).count();
         long underReview = works.stream().filter(w -> w.getStatus() == WorkStatus.UNDER_REVIEW).count();
@@ -192,6 +276,7 @@ public class OrganizerController {
         model.addAttribute("percentDone", percent);
         model.addAttribute("avgScore", avg);
         model.addAttribute("distribution", distribution);
+        model.addAttribute("maxDistribution", maxDistribution);
         model.addAttribute("inQueue", inQueue);
         model.addAttribute("underReview", underReview);
         model.addAttribute("reviewed", reviewed);

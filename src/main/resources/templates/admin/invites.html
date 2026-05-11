@@ -8,18 +8,12 @@
             <a th:href="@{/admin}">Обзор</a>
             <a th:href="@{/admin/users}">Пользователи</a>
             <a th:href="@{/admin/invites}" class="is-active">Инвайты</a>
+            <a th:href="@{/admin/tags}">Тэги</a>
             <a th:href="@{/admin/settings}">Настройки</a>
         </nav>
     </header>
 
-    <aside th:replace="~{components/sidebar :: bar(
-        ${ { {'key':'overview','label':'Обзор','href':'/admin','icon':'▦'},
-              {'key':'users','label':'Пользователи','href':'/admin/users','icon':'▤'},
-              {'key':'invites','label':'Инвайты','href':'/admin/invites','icon':'✎'},
-              {'key':'settings','label':'Настройки','href':'/admin/settings','icon':'⚙'} } },
-        'invites',
-        'Otklik',
-        'АДМИНИСТРИРОВАНИЕ')}"></aside>
+    <aside th:replace="~{components/sidebar :: bar(${roleSidebar}, 'invites', 'Otklik', ${roleSidebarSubtitle})}"></aside>
 
     <main class="app__main">
         <div class="page__hero">
@@ -45,7 +39,12 @@
                     </thead>
                     <tbody>
                     <tr th:each="i : ${invites}">
-                        <td style="font-family:monospace;font-size:13px;" th:text="${i.code}"></td>
+                        <td>
+                            <div style="font-family:monospace;font-size:13px;" th:text="${i.code}"></div>
+                            <div th:if="${not #lists.isEmpty(i.tags)}" class="mt-2">
+                                <span th:each="t : ${i.tags}" class="badge badge--gray" style="margin-right:4px;" th:text="${t.name}"></span>
+                            </div>
+                        </td>
                         <td><span class="tag" th:text="${i.role}"></span></td>
                         <td th:text="${i.activationsCount} + ' / ' + ${i.usagesLimit}"></td>
                         <td class="muted small" th:text="${i.validUntil != null ? #temporals.format(i.validUntil, 'dd.MM.yyyy HH:mm') : 'Без срока'}"></td>
@@ -54,6 +53,9 @@
                             <span th:if="${not i.active}" class="badge badge--gray">Отозван</span>
                         </td>
                         <td class="text-right">
+                            <button type="button" class="btn btn--ghost btn--sm"
+                                    th:data-link="|/register?invite=${i.code}|"
+                                    onclick="(function(b){const a=document.createElement('a');a.href=b.dataset.link;const u=a.href;navigator.clipboard?navigator.clipboard.writeText(u).then(()=>{b.textContent='Скопировано';setTimeout(()=>b.textContent='Ссылка',1500);}):prompt('Скопируйте ссылку',u);})(this)">Ссылка</button>
                             <form th:if="${i.active}" th:action="@{/admin/invites/{id}/revoke(id=${i.id})}" method="post" style="display:inline;">
                                 <button type="submit" class="btn btn--ghost btn--sm">Отозвать</button>
                             </form>
@@ -86,6 +88,15 @@
                     <div class="field">
                         <label class="field__label">Действителен до (опционально)</label>
                         <input name="validUntil" type="datetime-local" class="input">
+                    </div>
+                    <div class="field" th:if="${not #lists.isEmpty(allTags)}">
+                        <label class="field__label">Тэги (применятся к зарегистрированным)</label>
+                        <div class="stack mt-2" style="gap:6px;">
+                            <label th:each="t : ${allTags}" class="row gap-2" style="cursor:pointer;">
+                                <input type="checkbox" name="tagIds" th:value="${t.id}">
+                                <span th:text="${t.name}"></span>
+                            </label>
+                        </div>
                     </div>
                     <button type="submit" class="btn btn--primary mt-3">Создать инвайт</button>
                 </form>

@@ -5,20 +5,13 @@
 <div class="app">
     <header th:replace="~{components/topbar :: bar(~{::nav}, null)}">
         <nav class="topbar__nav">
-            <a th:href="@{/organizer}">Обзор</a>
-            <a th:href="@{/organizer/cycles}">Кампании</a>
+            <a th:href="@{/expert/queue}">Очередь</a>
             <a th:href="@{/expert/in-progress}" class="is-active">В работе</a>
+            <a th:href="@{/expert/completed}">Завершено</a>
         </nav>
     </header>
 
-    <aside th:replace="~{components/sidebar :: bar(
-        ${ { {'key':'overview','label':'Панель организатора','href':'/organizer','icon':'▦'},
-              {'key':'queue','label':'Очередь проверок','href':'/expert/queue','icon':'▤'},
-              {'key':'review','label':'Интерфейс оценки','href':'/expert/in-progress','icon':'✎'},
-              {'key':'results','label':'Панель результатов','href':'/expert/completed','icon':'▣'} } },
-        'review',
-        'Otklik',
-        'СИСТЕМА ПРОВЕРКИ')}"></aside>
+    <aside th:replace="~{components/sidebar :: bar(${roleSidebar}, 'inprogress', 'Otklik', ${roleSidebarSubtitle})}"></aside>
 
     <main class="app__main">
         <div class="page__hero">
@@ -60,6 +53,25 @@
                 </div>
             </div>
         </div>
+
+        <form th:action="@{/expert/in-progress}" method="get" class="card mb-3">
+            <div class="grid grid--3">
+                <div class="profile-field">
+                    <label class="profile-field__label" for="q">Поиск по названию</label>
+                    <input id="q" name="q" class="input" th:value="${filterQ}" placeholder="часть названия работы">
+                </div>
+                <div class="profile-field">
+                    <label class="profile-field__label" for="campaign">Кампания</label>
+                    <input id="campaign" name="campaign" class="input" placeholder="часть названия кампании">
+                </div>
+                <div class="profile-field" style="align-self:end;">
+                    <div class="row gap-2">
+                        <button type="submit" class="btn btn--primary">Применить</button>
+                        <a th:href="@{/expert/in-progress}" class="btn btn--ghost">Сбросить</a>
+                    </div>
+                </div>
+            </div>
+        </form>
 
         <div class="stack">
             <div th:each="a : ${activeAssignments}" class="active-task">

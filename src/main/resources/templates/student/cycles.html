@@ -10,13 +10,7 @@
         </nav>
     </header>
 
-    <aside th:replace="~{components/sidebar :: bar(
-        ${ { {'key':'works','label':'Мои работы','href':'/student/works','icon':'▦'},
-              {'key':'cycles','label':'Доступные кампании','href':'/student/cycles','icon':'▤'},
-              {'key':'profile','label':'Профиль','href':'/profile','icon':'◉'} } },
-        'cycles',
-        'Otklik',
-        'ЛИЧНЫЙ КАБИНЕТ')}"></aside>
+    <aside th:replace="~{components/sidebar :: bar(${roleSidebar}, 'cycles', 'Otklik', ${roleSidebarSubtitle})}"></aside>
 
     <main class="app__main">
         <div class="page__hero">

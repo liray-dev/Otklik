@@ -10,13 +10,7 @@
         </nav>
     </header>
 
-    <aside th:replace="~{components/sidebar :: bar(
-        ${ { {'key':'works','label':'Мои работы','href':'/student/works','icon':'▦'},
-              {'key':'cycles','label':'Доступные кампании','href':'/student/cycles','icon':'▤'},
-              {'key':'profile','label':'Профиль','href':'/profile','icon':'◉'} } },
-        'works',
-        'Otklik',
-        'ЛИЧНЫЙ КАБИНЕТ')}"></aside>
+    <aside th:replace="~{components/sidebar :: bar(${roleSidebar}, 'works', 'Otklik', ${roleSidebarSubtitle})}"></aside>
 
     <main class="app__main">
         <div th:if="${param.submitted}" class="alert alert--ok">Работа отправлена.</div>
@@ -26,7 +20,6 @@
                 <h1 class="page__title">Мои работы</h1>
                 <p class="page__subtitle">Статус проверок и полученные рецензии.</p>
             </div>
-            <a th:href="@{/student/cycles}" class="btn btn--primary">+ Отправить новую</a>
         </div>
 
         <div class="stack">
@@ -42,6 +35,7 @@
                         <span th:if="${w.status.name() == 'UNDER_REVIEW'}" class="badge badge--inprogress">В процессе</span>
                         <span th:if="${w.status.name() == 'REVIEWED'}" class="badge badge--done">Проверено</span>
                         <span th:if="${w.status.name() == 'NEEDS_REVISION'}" class="badge badge--wait">Нужны правки</span>
+                        <a th:href="@{/student/cycles/{cid}/submit(cid=${w.campaign.id})}" class="btn btn--ghost btn--sm">Открыть →</a>
                     </div>
                 </div>
 

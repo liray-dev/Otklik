@@ -43,6 +43,25 @@ public class CampaignService {
     }
 
     @Transactional(readOnly = true)
+    public List<Campaign> getActiveCampaignsForStudent(User student) {
+        List<Campaign> all = campaignRepository.findAllByStatus(CampaignStatus.ACTIVE);
+        java.util.Set<java.util.UUID> myTagIds = student.getTags() == null
+                ? java.util.Set.of()
+                : student.getTags().stream().map(t -> t.getId()).collect(java.util.stream.Collectors.toSet());
+        List<Campaign> out = new ArrayList<>();
+        for (Campaign c : all) {
+            java.util.Set<com.normilinet.otklik.domain.model.Tag> ctags = c.getTags();
+            if (ctags == null || ctags.isEmpty()) {
+                out.add(c);
+                continue;
+            }
+            boolean anyMatch = ctags.stream().anyMatch(t -> myTagIds.contains(t.getId()));
+            if (anyMatch) out.add(c);
+        }
+        return out;
+    }
+
+    @Transactional(readOnly = true)
     public List<Campaign> getByOrganizer(UUID organizerId) {
         return campaignRepository.findAllByOrganizerIdOrderByCreatedAtDesc(organizerId);
     }
@@ -62,7 +81,8 @@ public class CampaignService {
                                 Integer scaleMax,
                                 Integer expectedDurationDays,
                                 LocalDateTime deadline,
-                                List<CriterionInput> criteria) {
+                                List<CriterionInput> criteria,
+                                java.util.Set<com.normilinet.otklik.domain.model.Tag> tags) {
         Campaign campaign = new Campaign();
         campaign.setTitle(title);
         campaign.setDescription(description);
@@ -73,6 +93,7 @@ public class CampaignService {
         campaign.setDeadline(deadline);
         campaign.setStatus(CampaignStatus.DRAFT);
         campaign.setOrganizer(organizer);
+        if (tags != null) campaign.getTags().addAll(tags);
         campaign = campaignRepository.save(campaign);
         saveCriteria(campaign, criteria);
         return campaign;

@@ -48,24 +48,48 @@ public class ExpertController {
     }
 
     @GetMapping("/queue")
-    public String queue(@AuthenticationPrincipal CustomUserDetails user, Model model) {
+    public String queue(@AuthenticationPrincipal CustomUserDetails user,
+                        @RequestParam(required = false) String q,
+                        @RequestParam(required = false) String campaign,
+                        @RequestParam(required = false, defaultValue = "newest") String sort,
+                        Model model) {
         List<Work> available = assignmentService.listAvailableForReviewer(user.getUsername());
+        List<MaskedWork> filtered = available.stream()
+                .map(this::asMaskedWork)
+                .filter(mw -> q == null || q.isBlank() || mw.getTitle().toLowerCase().contains(q.toLowerCase()))
+                .filter(mw -> campaign == null || campaign.isBlank() || mw.getCampaignTitle().toLowerCase().contains(campaign.toLowerCase()))
+                .toList();
+        java.util.Comparator<MaskedWork> cmp = java.util.Comparator.comparing(mw -> mw.work().getCreatedAt());
+        if ("newest".equals(sort)) cmp = cmp.reversed();
+        else if ("title".equals(sort)) cmp = java.util.Comparator.comparing(MaskedWork::getTitle, String.CASE_INSENSITIVE_ORDER);
+        filtered = filtered.stream().sorted(cmp).toList();
+
         List<WorkAssignment> mine = assignmentService.listMyAll(user.getUsername());
         long inProgress = mine.stream().filter(a -> a.getStatus() == AssignmentStatus.IN_PROGRESS).count();
         long completed = mine.stream().filter(a -> a.getStatus() == AssignmentStatus.COMPLETED).count();
 
-        model.addAttribute("availableWorks", available.stream().map(this::asMaskedWork).toList());
+        model.addAttribute("availableWorks", filtered);
         model.addAttribute("totalWorksAvailable", available.size());
         model.addAttribute("inProgressCount", inProgress);
         model.addAttribute("completedCount", completed);
+        model.addAttribute("filterQ", q);
+        model.addAttribute("filterCampaign", campaign);
+        model.addAttribute("filterSort", sort);
         return "expert/queue";
     }
 
     @GetMapping("/in-progress")
-    public String inProgress(@AuthenticationPrincipal CustomUserDetails user, Model model) {
+    public String inProgress(@AuthenticationPrincipal CustomUserDetails user,
+                             @RequestParam(required = false) String q,
+                             Model model) {
         List<WorkAssignment> mine = assignmentService.listMyAll(user.getUsername());
-        List<WorkAssignment> active = mine.stream().filter(a -> a.getStatus() == AssignmentStatus.IN_PROGRESS).toList();
-        long inProgress = active.size();
+        List<WorkAssignment> active = mine.stream()
+                .filter(a -> a.getStatus() == AssignmentStatus.IN_PROGRESS)
+                .filter(a -> q == null || q.isBlank()
+                        || (a.getWork().getTitle() != null && a.getWork().getTitle().toLowerCase().contains(q.toLowerCase()))
+                        || a.getWork().getCampaign().getTitle().toLowerCase().contains(q.toLowerCase()))
+                .toList();
+        long inProgress = mine.stream().filter(a -> a.getStatus() == AssignmentStatus.IN_PROGRESS).count();
         long completed = mine.stream().filter(a -> a.getStatus() == AssignmentStatus.COMPLETED).count();
         long available = assignmentService.listAvailableForReviewer(user.getUsername()).size();
 
@@ -73,13 +97,28 @@ public class ExpertController {
         model.addAttribute("totalWorksAvailable", available);
         model.addAttribute("inProgressCount", inProgress);
         model.addAttribute("completedCount", completed);
+        model.addAttribute("filterQ", q);
         return "expert/in_progress";
     }
 
     @GetMapping("/completed")
-    public String completed(@AuthenticationPrincipal CustomUserDetails user, Model model) {
+    public String completed(@AuthenticationPrincipal CustomUserDetails user,
+                            @RequestParam(required = false) String q,
+                            @RequestParam(required = false, defaultValue = "newest") String sort,
+                            Model model) {
         List<WorkAssignment> mine = assignmentService.listMyAll(user.getUsername());
-        List<WorkAssignment> done = mine.stream().filter(a -> a.getStatus() == AssignmentStatus.COMPLETED).toList();
+        List<WorkAssignment> done = mine.stream()
+                .filter(a -> a.getStatus() == AssignmentStatus.COMPLETED)
+                .filter(a -> q == null || q.isBlank()
+                        || (a.getWork().getTitle() != null && a.getWork().getTitle().toLowerCase().contains(q.toLowerCase()))
+                        || a.getWork().getCampaign().getTitle().toLowerCase().contains(q.toLowerCase()))
+                .sorted((x, y) -> {
+                    if ("oldest".equals(sort)) {
+                        return java.util.Objects.compare(x.getCompletedAt(), y.getCompletedAt(), java.util.Comparator.nullsLast(java.util.Comparator.naturalOrder()));
+                    }
+                    return java.util.Objects.compare(y.getCompletedAt(), x.getCompletedAt(), java.util.Comparator.nullsLast(java.util.Comparator.naturalOrder()));
+                })
+                .toList();
         long completed = done.size();
         long inProgress = mine.stream().filter(a -> a.getStatus() == AssignmentStatus.IN_PROGRESS).count();
         long available = assignmentService.listAvailableForReviewer(user.getUsername()).size();
@@ -103,7 +142,15 @@ public class ExpertController {
         model.addAttribute("totalWorksAvailable", available);
         model.addAttribute("inProgressCount", inProgress);
         model.addAttribute("completedCount", completed);
+        model.addAttribute("filterQ", q);
+        model.addAttribute("filterSort", sort);
         return "expert/completed";
+    }
+
+    @PostMapping("/review/{assignmentId}/reopen")
+    public String reopen(@AuthenticationPrincipal CustomUserDetails user, @PathVariable UUID assignmentId) {
+        WorkAssignment a = reviewService.reopen(assignmentId, user.getUsername());
+        return "redirect:/expert/review/" + a.getId();
     }
 
     @PostMapping("/queue/{workId}/take")

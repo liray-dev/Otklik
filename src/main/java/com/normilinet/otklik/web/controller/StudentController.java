@@ -43,10 +43,13 @@ public class StudentController {
     private final WorkAssignmentRepository assignmentRepository;
     private final ReviewRepository reviewRepository;
     private final ReviewService reviewService;
+    private final com.normilinet.otklik.domain.repository.UserRepository userRepository;
+    private final com.normilinet.otklik.service.NotificationService notificationService;
 
     @GetMapping("/cycles")
     public String cycles(@AuthenticationPrincipal CustomUserDetails user, Model model) {
-        java.util.List<Campaign> active = campaignService.getActiveCampaigns();
+        com.normilinet.otklik.domain.model.User u = userRepository.findByUsername(user.getUsername()).orElseThrow();
+        java.util.List<Campaign> active = campaignService.getActiveCampaignsForStudent(u);
         java.util.List<Map<String, Object>> rows = new ArrayList<>();
         for (Campaign c : active) {
             java.util.Optional<Work> mine = workService.findExistingForStudent(c.getId(), user.getUsername());
@@ -116,14 +119,28 @@ public class StudentController {
 
         String revisionComment = null;
         if (work != null && work.getStatus() == com.normilinet.otklik.domain.enums.WorkStatus.NEEDS_REVISION) {
+            java.util.List<WorkAssignment> abandoned = new ArrayList<>();
             for (WorkAssignment a : assignmentRepository.findAllByWorkId(work.getId())) {
-                if (a.getStatus() == AssignmentStatus.ABANDONED) {
-                    Review r = reviewRepository.findByAssignmentId(a.getId()).orElse(null);
-                    if (r != null && r.getFeedback() != null && !r.getFeedback().isBlank()) {
-                        revisionComment = r.getFeedback();
-                        break;
-                    }
+                if (a.getStatus() == AssignmentStatus.ABANDONED) abandoned.add(a);
+            }
+            abandoned.sort((x, y) -> {
+                java.time.LocalDateTime xa = x.getCompletedAt() != null ? x.getCompletedAt() : x.getCreatedAt();
+                java.time.LocalDateTime ya = y.getCompletedAt() != null ? y.getCompletedAt() : y.getCreatedAt();
+                return ya.compareTo(xa);
+            });
+            for (WorkAssignment a : abandoned) {
+                Review r = reviewRepository.findByAssignmentId(a.getId()).orElse(null);
+                if (r != null && r.getFeedback() != null && !r.getFeedback().isBlank()) {
+                    revisionComment = r.getFeedback();
+                    break;
                 }
+            }
+        }
+
+        com.normilinet.otklik.domain.model.WorkAttachment voiceAtt = null;
+        if (work != null) {
+            for (com.normilinet.otklik.domain.model.WorkAttachment att : all) {
+                if (att.isVoice()) { voiceAtt = att; break; }
             }
         }
 
@@ -134,6 +151,7 @@ public class StudentController {
         model.addAttribute("editable", editable);
         model.addAttribute("materials", campaignService.getMaterials(id));
         model.addAttribute("revisionComment", revisionComment);
+        model.addAttribute("voiceAttachment", voiceAtt);
         return "student/submit";
     }
 
@@ -154,6 +172,15 @@ public class StudentController {
                     workService.attachVoice(work, audio, null);
                 }
             } catch (IllegalArgumentException ignored) {
+            }
+        }
+        for (WorkAssignment a : assignmentRepository.findAllByWorkId(work.getId())) {
+            if (a.getStatus() == AssignmentStatus.IN_PROGRESS && a.getTakenAt() != null
+                    && a.getTakenAt().isAfter(java.time.LocalDateTime.now().minusSeconds(10))) {
+                notificationService.push(a.getReviewer(),
+                        "REVISION_BACK",
+                        "Студент доработал работу «" + work.getTitle() + "» — она снова у вас.",
+                        "/expert/review/" + a.getId());
             }
         }
         return "redirect:/student/works?submitted";

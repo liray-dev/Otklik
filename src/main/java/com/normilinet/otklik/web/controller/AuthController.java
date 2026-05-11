@@ -23,8 +23,11 @@ public class AuthController {
     }
 
     @GetMapping("/register")
-    public String registerForm(Model model) {
-        model.addAttribute("registrationRequest", new RegistrationRequestDto());
+    public String registerForm(@org.springframework.web.bind.annotation.RequestParam(value = "invite", required = false) String invite,
+                               Model model) {
+        RegistrationRequestDto dto = new RegistrationRequestDto();
+        if (invite != null && !invite.isBlank()) dto.setInviteCode(invite);
+        model.addAttribute("registrationRequest", dto);
         return "auth/register";
     }
 

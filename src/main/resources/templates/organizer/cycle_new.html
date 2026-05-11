@@ -7,18 +7,11 @@
         <nav class="topbar__nav">
             <a th:href="@{/organizer}" class="is-active">Обзор</a>
             <a th:href="@{/organizer/cycles}">Кампании</a>
-            <a th:href="@{/admin/users}">Рецензенты</a>
+            <a th:href="@{/organizer/users}">Пользователи</a>
         </nav>
     </header>
 
-    <aside th:replace="~{components/sidebar :: bar(
-        ${ { {'key':'overview','label':'Панель организатора','href':'/organizer','icon':'▦'},
-              {'key':'queue','label':'Очередь проверок','href':'/expert/queue','icon':'▤'},
-              {'key':'review','label':'Интерфейс оценки','href':'/expert/queue','icon':'✎'},
-              {'key':'results','label':'Панель результатов','href':'/organizer/cycles','icon':'▣'} } },
-        'overview',
-        'Otklik',
-        'КОРПОРАТИВНЫЙ МОДЕРНИЗМ')}"></aside>
+    <aside th:replace="~{components/sidebar :: bar(${roleSidebar}, 'cycles', 'Otklik', ${roleSidebarSubtitle})}"></aside>
 
     <main class="app__main">
         <form th:action="@{/organizer/cycles/new}" method="post" enctype="multipart/form-data" id="cycle-form">
@@ -157,6 +150,18 @@
                                     <div class="radio-list__sub">Никто не видит никого</div>
                                 </div>
                             </label>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card__label mb-2">Тэги доступа</div>
+                        <p class="muted small mb-3">Студенты увидят кампанию только если у них есть хотя бы один из выбранных тэгов. Не выбрано — открытая кампания, видна всем.</p>
+                        <div class="stack" style="gap:6px;">
+                            <label th:each="t : ${allTags}" class="row gap-2" style="cursor:pointer;">
+                                <input type="checkbox" name="tagIds" th:value="${t.id}">
+                                <span th:text="${t.name}"></span>
+                            </label>
+                            <div th:if="${#lists.isEmpty(allTags)}" class="muted small">Тэгов пока нет. Создайте их в админке.</div>
                         </div>
                     </div>
 

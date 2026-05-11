@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{components/head :: head('Тэги')}"></head>
+<body>
+<div class="app">
+    <header th:replace="~{components/topbar :: bar(~{::nav}, null)}">
+        <nav class="topbar__nav">
+            <a th:href="@{/admin}">Обзор</a>
+            <a th:href="@{/admin/users}">Пользователи</a>
+            <a th:href="@{/admin/invites}">Инвайты</a>
+            <a th:href="@{/admin/tags}" class="is-active">Тэги</a>
+            <a th:href="@{/admin/settings}">Настройки</a>
+        </nav>
+    </header>
+
+    <aside th:replace="~{components/sidebar :: bar(${roleSidebar}, 'tags', 'Otklik', ${roleSidebarSubtitle})}"></aside>
+
+    <main class="app__main">
+        <div class="page__hero">
+            <div>
+                <h1 class="page__title">Тэги</h1>
+                <p class="page__subtitle">Маркеры для распределения кампаний. Применяются к пользователям и кампаниям.</p>
+            </div>
+        </div>
+
+        <div class="card mb-3">
+            <div class="card__label mb-3">Создать тэг</div>
+            <form th:action="@{/admin/tags}" method="post" class="row gap-3">
+                <input name="name" class="input" placeholder="напр. УрФУ ВЕСНА 2026" required style="flex:1;">
+                <input name="description" class="input" placeholder="Описание (опционально)" style="flex:2;">
+                <button type="submit" class="btn btn--primary">+ Создать</button>
+            </form>
+        </div>
+
+        <div class="card">
+            <table class="table">
+                <thead>
+                <tr>
+                    <th>Имя</th>
+                    <th>Описание</th>
+                    <th>Создан</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="t : ${tags}">
+                    <td><strong th:text="${t.name}"></strong></td>
+                    <td class="muted small" th:text="${t.description != null ? t.description : '—'}"></td>
+                    <td class="muted small" th:text="${#temporals.format(t.createdAt, 'dd.MM.yyyy HH:mm')}"></td>
+                    <td class="text-right">
+                        <form th:action="@{/admin/tags/{id}/delete(id=${t.id})}" method="post"
+                              onsubmit="return confirm('Удалить тэг? Он будет снят со всех пользователей, кампаний и инвайтов.')">
+                            <button type="submit" class="btn btn--danger btn--sm">Удалить</button>
+                        </form>
+                    </td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(tags)}">
+                    <td colspan="4" class="muted" style="text-align:center;padding:24px;">Тэгов пока нет.</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <footer th:replace="~{components/footer :: bar}"></footer>
+</div>
+</body>
+</html>

@@ -8,6 +8,9 @@ import com.normilinet.otklik.domain.repository.UserRepository;
 import com.normilinet.otklik.domain.repository.CampaignRepository;
 import com.normilinet.otklik.service.AdminService;
 import com.normilinet.otklik.service.InviteService;
+import com.normilinet.otklik.service.TagService;
+import org.springframework.web.bind.annotation.RequestParam;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -32,6 +35,7 @@ public class AdminController {
     private final InviteService inviteService;
     private final AdminService adminService;
     private final CampaignRepository campaignRepository;
+    private final TagService tagService;
 
     @GetMapping
     public String dashboard(Model model) {
@@ -45,12 +49,75 @@ public class AdminController {
     }
 
     @GetMapping("/users")
-    public String users(Model model) {
-        List<User> users = userRepository.findAll().stream()
+    public String users(@RequestParam(required = false) String q,
+                        @RequestParam(required = false) String role,
+                        @RequestParam(required = false) String invite,
+                        @RequestParam(required = false) UUID tag,
+                        @RequestParam(required = false) String group,
+                        Model model) {
+        List<User> users = filterUsers(q, role, invite, tag, group);
+        model.addAttribute("users", users);
+        model.addAttribute("allTags", tagService.listAll());
+        model.addAttribute("filterQ", q);
+        model.addAttribute("filterRole", role);
+        model.addAttribute("filterInvite", invite);
+        model.addAttribute("filterTag", tag);
+        model.addAttribute("filterGroup", group);
+        model.addAttribute("usersBase", "/admin/users");
+        return "users/list";
+    }
+
+    @PostMapping("/users/tag/apply")
+    public String bulkApplyTag(@RequestParam UUID tagId,
+                               @RequestParam(value = "userIds", required = false) List<UUID> userIds,
+                               jakarta.servlet.http.HttpServletRequest req) {
+        if (userIds != null) tagService.bulkAddTag(userIds, tagId);
+        return "redirect:" + (req.getHeader("Referer") != null ? req.getHeader("Referer") : "/admin/users");
+    }
+
+    @PostMapping("/users/tag/remove")
+    public String bulkRemoveTag(@RequestParam UUID tagId,
+                                @RequestParam(value = "userIds", required = false) List<UUID> userIds,
+                                jakarta.servlet.http.HttpServletRequest req) {
+        if (userIds != null) tagService.bulkRemoveTag(userIds, tagId);
+        return "redirect:" + (req.getHeader("Referer") != null ? req.getHeader("Referer") : "/admin/users");
+    }
+
+    @GetMapping("/tags")
+    public String tags(Model model) {
+        model.addAttribute("tags", tagService.listAll());
+        return "admin/tags";
+    }
+
+    @PostMapping("/tags")
+    public String createTag(@RequestParam String name,
+                            @RequestParam(required = false) String description) {
+        tagService.createTag(name, description);
+        return "redirect:/admin/tags";
+    }
+
+    @PostMapping("/tags/{id}/delete")
+    public String deleteTag(@PathVariable UUID id) {
+        tagService.deleteTag(id);
+        return "redirect:/admin/tags";
+    }
+
+    private List<User> filterUsers(String q, String role, String invite, UUID tag, String group) {
+        return userRepository.findAll().stream()
+                .filter(u -> q == null || q.isBlank()
+                        || (u.getUsername() != null && u.getUsername().toLowerCase().contains(q.toLowerCase()))
+                        || (u.getFullName() != null && u.getFullName().toLowerCase().contains(q.toLowerCase()))
+                        || (u.getEmail() != null && u.getEmail().toLowerCase().contains(q.toLowerCase())))
+                .filter(u -> role == null || role.isBlank() || u.getRole().name().equals(role))
+                .filter(u -> invite == null || invite.isBlank()
+                        || (u.getInvite() != null && u.getInvite().getCode() != null
+                            && u.getInvite().getCode().toLowerCase().contains(invite.toLowerCase())))
+                .filter(u -> tag == null
+                        || (u.getTags() != null && u.getTags().stream().anyMatch(t -> t.getId().equals(tag))))
+                .filter(u -> group == null || group.isBlank()
+                        || (u.getUniversityGroup() != null && u.getUniversityGroup().toLowerCase().contains(group.toLowerCase())))
                 .sorted(Comparator.comparing(User::getCreatedAt).reversed())
                 .toList();
-        model.addAttribute("users", users);
-        return "admin/users";
     }
 
     @GetMapping("/invites")
@@ -60,6 +127,7 @@ public class AdminController {
                 .toList();
         model.addAttribute("invites", invites);
         model.addAttribute("roles", Role.values());
+        model.addAttribute("allTags", tagService.listAll());
         return "admin/invites";
     }
 
@@ -67,9 +135,10 @@ public class AdminController {
     public String createInvite(@RequestParam String code,
                                @RequestParam String role,
                                @RequestParam(defaultValue = "1") int usagesLimit,
-                               @RequestParam(required = false) String validUntil) {
+                               @RequestParam(required = false) String validUntil,
+                               @RequestParam(value = "tagIds", required = false) List<UUID> tagIds) {
         LocalDateTime until = (validUntil != null && !validUntil.isBlank()) ? LocalDateTime.parse(validUntil) : null;
-        inviteService.createInvite(code, Role.valueOf(role), usagesLimit, until);
+        inviteService.createInvite(code, Role.valueOf(role), usagesLimit, until, tagIds);
         return "redirect:/admin/invites";
     }
 

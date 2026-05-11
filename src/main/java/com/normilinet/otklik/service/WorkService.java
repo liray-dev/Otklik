@@ -28,6 +28,7 @@ public class WorkService {
     private final CampaignRepository campaignRepository;
     private final UserRepository userRepository;
     private final FileStorageService storage;
+    private final com.normilinet.otklik.domain.repository.WorkAssignmentRepository workAssignmentRepository;
 
     @Transactional
     public Work submitWork(UUID campaignId,
@@ -88,11 +89,11 @@ public class WorkService {
         if (title != null && !title.isBlank()) work.setTitle(title);
         work.setContentText(contentText);
         if (externalLink != null && !externalLink.isBlank()) work.setExternalLink(externalLink);
-        if (work.getStatus() == WorkStatus.NEEDS_REVISION) {
-            WorkStatus next = work.getCampaign().getStatus() == CampaignStatus.ACTIVE
-                    ? WorkStatus.IN_QUEUE
-                    : WorkStatus.UPLOADED;
-            work.setStatus(next);
+        boolean wasRevision = work.getStatus() == WorkStatus.NEEDS_REVISION;
+        if (wasRevision || work.getStatus() == WorkStatus.UPLOADED) {
+            if (work.getCampaign().getStatus() == CampaignStatus.ACTIVE) {
+                work.setStatus(WorkStatus.IN_QUEUE);
+            }
         }
         work = workRepository.save(work);
         if (files != null) {
@@ -101,7 +102,36 @@ public class WorkService {
                 attachFile(work, file);
             }
         }
+        if (wasRevision && work.getStatus() == WorkStatus.IN_QUEUE) {
+            reassignToLastReviewer(work);
+        }
         return work;
+    }
+
+    @Transactional
+    public void reassignToLastReviewer(Work work) {
+        java.util.List<com.normilinet.otklik.domain.model.WorkAssignment> abandoned =
+                workAssignmentRepository.findAllByWorkId(work.getId()).stream()
+                        .filter(a -> a.getStatus() == com.normilinet.otklik.domain.enums.AssignmentStatus.ABANDONED)
+                        .sorted((x, y) -> {
+                            java.time.LocalDateTime xa = x.getCompletedAt() != null ? x.getCompletedAt() : x.getCreatedAt();
+                            java.time.LocalDateTime ya = y.getCompletedAt() != null ? y.getCompletedAt() : y.getCreatedAt();
+                            return ya.compareTo(xa);
+                        }).toList();
+        if (abandoned.isEmpty()) return;
+        com.normilinet.otklik.domain.model.WorkAssignment latest = abandoned.get(0);
+        boolean alreadyHas = workAssignmentRepository.findAllByWorkId(work.getId()).stream()
+                .anyMatch(a -> a.getReviewer().getId().equals(latest.getReviewer().getId())
+                        && a.getStatus() != com.normilinet.otklik.domain.enums.AssignmentStatus.ABANDONED);
+        if (alreadyHas) return;
+        com.normilinet.otklik.domain.model.WorkAssignment fresh = new com.normilinet.otklik.domain.model.WorkAssignment();
+        fresh.setWork(work);
+        fresh.setReviewer(latest.getReviewer());
+        fresh.setStatus(com.normilinet.otklik.domain.enums.AssignmentStatus.IN_PROGRESS);
+        fresh.setTakenAt(java.time.LocalDateTime.now());
+        workAssignmentRepository.save(fresh);
+        work.setStatus(WorkStatus.UNDER_REVIEW);
+        workRepository.save(work);
     }
 
     @Transactional

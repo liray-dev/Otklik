@@ -101,6 +101,30 @@ public class ReviewService {
     }
 
     @Transactional
+    public WorkAssignment reopen(UUID assignmentId, String reviewerUsername) {
+        WorkAssignment assignment = assignmentRepository.findById(assignmentId)
+                .orElseThrow(() -> new IllegalArgumentException("Назначение не найдено"));
+        if (!assignment.getReviewer().getUsername().equals(reviewerUsername)) {
+            throw new SecurityException("Не ваше назначение");
+        }
+        if (assignment.getStatus() != AssignmentStatus.COMPLETED) {
+            throw new IllegalStateException("Можно открыть только завершённую рецензию");
+        }
+        Review r = reviewRepository.findByAssignmentId(assignmentId).orElse(null);
+        if (r != null) {
+            r.setStatus(ReviewStatus.DRAFT);
+            reviewRepository.save(r);
+        }
+        assignment.setStatus(AssignmentStatus.IN_PROGRESS);
+        assignment.setCompletedAt(null);
+        assignmentRepository.save(assignment);
+        Work w = assignment.getWork();
+        w.setStatus(WorkStatus.UNDER_REVIEW);
+        workRepository.save(w);
+        return assignment;
+    }
+
+    @Transactional
     public Work sendBackForRevision(UUID assignmentId, String reviewerUsername, String comment) {
         WorkAssignment assignment = assignmentRepository.findById(assignmentId)
                 .orElseThrow(() -> new IllegalArgumentException("Назначение не найдено"));

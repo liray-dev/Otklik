@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{components/head :: head('Пользователи')}"></head>
+<body>
+<div class="app">
+    <header th:replace="~{components/topbar :: bar(~{::nav}, null)}">
+        <nav class="topbar__nav">
+            <a th:each="item : ${roleSidebar}" th:href="${item.href}"
+               th:classappend="${item.key == 'users'} ? 'is-active'"
+               th:text="${item.label}">Раздел</a>
+        </nav>
+    </header>
+
+    <aside th:replace="~{components/sidebar :: bar(${roleSidebar}, 'users', 'Otklik', ${roleSidebarSubtitle})}"></aside>
+
+    <main class="app__main">
+        <div class="page__hero">
+            <div>
+                <h1 class="page__title">Пользователи и тэги</h1>
+                <p class="page__subtitle">Поиск по ФИО, username, инвайт-коду, группе. Массовая привязка тэгов.</p>
+            </div>
+            <a th:if="${isAdmin}" th:href="@{/admin/tags}" class="btn btn--ghost">Управление тэгами</a>
+        </div>
+
+        <form th:action="@{${usersBase}}" method="get" class="card mb-3">
+            <div class="grid grid--3 mb-2">
+                <div class="profile-field">
+                    <label class="profile-field__label" for="q">ФИО / username / email</label>
+                    <input id="q" name="q" class="input" th:value="${filterQ}" placeholder="Иванов / ivanov / a@b">
+                </div>
+                <div class="profile-field">
+                    <label class="profile-field__label" for="group">Универ. группа</label>
+                    <input id="group" name="group" class="input" th:value="${filterGroup}" placeholder="РИ-150926">
+                </div>
+                <div class="profile-field">
+                    <label class="profile-field__label" for="invite">Инвайт-код</label>
+                    <input id="invite" name="invite" class="input" th:value="${filterInvite}" placeholder="например MASTER-...">
+                </div>
+            </div>
+            <div class="grid grid--3 mb-3">
+                <div class="profile-field">
+                    <label class="profile-field__label" for="role">Роль</label>
+                    <select id="role" name="role" class="input">
+                        <option value="">— любая —</option>
+                        <option value="ADMIN" th:selected="${filterRole == 'ADMIN'}">ADMIN</option>
+                        <option value="ORGANIZER" th:selected="${filterRole == 'ORGANIZER'}">ORGANIZER</option>
+                        <option value="EXPERT" th:selected="${filterRole == 'EXPERT'}">EXPERT</option>
+                        <option value="STUDENT" th:selected="${filterRole == 'STUDENT'}">STUDENT</option>
+                    </select>
+                </div>
+                <div class="profile-field">
+                    <label class="profile-field__label" for="tag">Тэг</label>
+                    <select id="tag" name="tag" class="input">
+                        <option value="">— любой —</option>
+                        <option th:each="t : ${allTags}" th:value="${t.id}" th:text="${t.name}" th:selected="${filterTag != null and filterTag == t.id}"></option>
+                    </select>
+                </div>
+                <div class="profile-field" style="align-self:end;">
+                    <div class="row gap-2">
+                        <button type="submit" class="btn btn--primary">Применить</button>
+                        <a th:href="@{${usersBase}}" class="btn btn--ghost">Сбросить</a>
+                    </div>
+                </div>
+            </div>
+        </form>
+
+        <form th:action="@{${usersBase} + '/tag/apply'}" method="post" class="card">
+            <div class="row row--between mb-3">
+                <strong th:text="'Найдено: ' + ${#lists.size(users)}">0</strong>
+                <div class="row gap-2">
+                    <select name="tagId" class="input" required>
+                        <option value="">— выберите тэг —</option>
+                        <option th:each="t : ${allTags}" th:value="${t.id}" th:text="${t.name}"></option>
+                    </select>
+                    <button type="submit" class="btn btn--primary btn--sm">Применить тэг к выбранным</button>
+                    <button type="submit" class="btn btn--ghost btn--sm" th:formaction="@{${usersBase} + '/tag/remove'}">Снять тэг</button>
+                </div>
+            </div>
+
+            <table class="table">
+                <thead>
+                <tr>
+                    <th style="width:34px;"><input type="checkbox" id="select-all"></th>
+                    <th>Username</th>
+                    <th>ФИО</th>
+                    <th>Email</th>
+                    <th>Группа</th>
+                    <th>Роль</th>
+                    <th>Тэги</th>
+                    <th>Инвайт</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="u : ${users}">
+                    <td><input type="checkbox" name="userIds" th:value="${u.id}"></td>
+                    <td><strong th:text="${u.username}"></strong></td>
+                    <td class="small" th:text="${u.fullName != null ? u.fullName : '—'}"></td>
+                    <td class="muted small" th:text="${u.email != null ? u.email : '—'}"></td>
+                    <td class="small" th:text="${u.universityGroup != null ? u.universityGroup : '—'}"></td>
+                    <td><span class="tag" th:text="${u.role}"></span></td>
+                    <td>
+                        <span th:each="t : ${u.tags}" class="badge badge--gray" style="margin-right:4px;" th:text="${t.name}"></span>
+                    </td>
+                    <td class="muted small" th:text="${u.invite != null ? u.invite.code : '—'}"></td>
+                    <td class="text-right">
+                        <a th:href="@{/profile/{id}(id=${u.id})}" class="btn btn--ghost btn--sm">Профиль</a>
+                        <form th:if="${isAdmin}" th:action="@{/admin/users/{id}/delete(id=${u.id})}" method="post" style="display:inline-block;"
+                              onsubmit="return confirm('Удалить пользователя со всеми его работами?')">
+                            <button type="submit" class="btn btn--danger btn--sm"
+                                    th:disabled="${u.username == #authentication.name}">×</button>
+                        </form>
+                    </td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(users)}">
+                    <td colspan="9" class="muted" style="text-align:center;padding:24px;">Пользователей по фильтру не найдено.</td>
+                </tr>
+                </tbody>
+            </table>
+        </form>
+    </main>
+
+    <footer th:replace="~{components/footer :: bar}"></footer>
+</div>
+
+<script>
+(function () {
+    const sel = document.getElementById('select-all');
+    if (!sel) return;
+    sel.addEventListener('change', () => {
+        document.querySelectorAll('input[name="userIds"]').forEach(c => c.checked = sel.checked);
+    });
+})();
+</script>
+</body>
+</html>

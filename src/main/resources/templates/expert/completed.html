@@ -5,20 +5,13 @@
 <div class="app">
     <header th:replace="~{components/topbar :: bar(~{::nav}, null)}">
         <nav class="topbar__nav">
-            <a th:href="@{/organizer}">Обзор</a>
-            <a th:href="@{/organizer/cycles}">Кампании</a>
-            <a th:href="@{/expert/completed}" class="is-active">Результаты</a>
+            <a th:href="@{/expert/queue}">Очередь</a>
+            <a th:href="@{/expert/in-progress}">В работе</a>
+            <a th:href="@{/expert/completed}" class="is-active">Завершено</a>
         </nav>
     </header>
 
-    <aside th:replace="~{components/sidebar :: bar(
-        ${ { {'key':'overview','label':'Панель организатора','href':'/organizer','icon':'▦'},
-              {'key':'queue','label':'Очередь проверок','href':'/expert/queue','icon':'▤'},
-              {'key':'review','label':'Интерфейс оценки','href':'/expert/in-progress','icon':'✎'},
-              {'key':'results','label':'Панель результатов','href':'/expert/completed','icon':'▣'} } },
-        'results',
-        'Otklik',
-        'СИСТЕМА ПРОВЕРКИ')}"></aside>
+    <aside th:replace="~{components/sidebar :: bar(${roleSidebar}, 'completed', 'Otklik', ${roleSidebarSubtitle})}"></aside>
 
     <main class="app__main">
         <div class="page__hero">
@@ -61,6 +54,29 @@
             </div>
         </div>
 
+        <form th:action="@{/expert/completed}" method="get" class="card mb-3">
+            <div class="grid grid--3">
+                <div class="profile-field">
+                    <label class="profile-field__label" for="q">Поиск по названию</label>
+                    <input id="q" name="q" class="input" th:value="${filterQ}" placeholder="часть названия работы">
+                </div>
+                <div class="profile-field">
+                    <label class="profile-field__label" for="campaign">Кампания</label>
+                    <input id="campaign" name="campaign" class="input" placeholder="часть названия кампании">
+                </div>
+                <div class="profile-field" style="align-self:end;">
+                    <div class="row gap-2">
+                        <select name="sort" class="input">
+                            <option value="newest" th:selected="${filterSort == 'newest'}">Сначала новые</option>
+                            <option value="oldest" th:selected="${filterSort == 'oldest'}">Сначала старые</option>
+                        </select>
+                        <button type="submit" class="btn btn--primary">Применить</button>
+                        <a th:href="@{/expert/completed}" class="btn btn--ghost">Сбросить</a>
+                    </div>
+                </div>
+            </div>
+        </form>
+
         <div class="stack">
             <div th:each="row : ${doneRows}" class="card" th:with="a=${row.assignment},r=${row.review},criteria=${row.criteria},scores=${row.scores},scaleMax=${row.scaleMax}">
                 <div class="card__head">
@@ -88,6 +104,14 @@
                 <div th:if="${row.hasReview and r.feedback != null and !#strings.isEmpty(r.feedback)}" class="card" style="background:var(--paper);padding:12px;">
                     <div class="card__label mb-2">Качественная обратная связь</div>
                     <div class="small" th:text="${r.feedback}"></div>
+                </div>
+
+                <div class="row gap-2 mt-3">
+                    <a th:href="@{/expert/review/{id}(id=${a.id})}" class="btn btn--ghost btn--sm">Открыть рецензию</a>
+                    <form th:action="@{/expert/review/{id}/reopen(id=${a.id})}" method="post"
+                          onsubmit="return confirm('Открыть и доработать? Работа вернётся в статус «в процессе», финальная оценка снова станет черновиком.')">
+                        <button type="submit" class="btn btn--warn btn--sm">↩ Открыть и доработать</button>
+                    </form>
                 </div>
             </div>
 

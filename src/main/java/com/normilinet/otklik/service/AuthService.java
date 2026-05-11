@@ -15,6 +15,7 @@ public class AuthService {
 
     private final UserRepository userRepository;
     private final InviteService inviteService;
+    private final TagService tagService;
     private final PasswordEncoder passwordEncoder;
 
     @Transactional
@@ -31,7 +32,8 @@ public class AuthService {
         user.setEmail(request.getEmail());
         user.setRole(invite.getRole());
         user.setInvite(invite);
+        user = userRepository.save(user);
 
-        userRepository.save(user);
+        tagService.applyInviteTags(user, invite);
     }
 }

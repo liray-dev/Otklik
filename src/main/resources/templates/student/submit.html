@@ -10,12 +10,7 @@
         </nav>
     </header>
 
-    <aside th:replace="~{components/sidebar :: bar(
-        ${ { {'key':'works','label':'Мои работы','href':'/student/works','icon':'▦'},
-              {'key':'cycles','label':'Доступные кампании','href':'/student/cycles','icon':'▤'} } },
-        'cycles',
-        'Otklik',
-        'СИСТЕМА ПРОВЕРКИ')}"></aside>
+    <aside th:replace="~{components/sidebar :: bar(${roleSidebar}, 'cycles', 'Otklik', ${roleSidebarSubtitle})}"></aside>
 
     <main class="app__main">
         <div class="page__hero">
@@ -133,8 +128,18 @@
 
                 <div class="stack">
                     <div class="card" th:if="${editable}">
-                        <div class="card__title mb-3">🎤 Голосовой комментарий (опционально)</div>
-                        <p class="muted small mb-3">Запишите устное пояснение к работе. Будет приложено к работе автоматически после отправки.</p>
+                        <div class="card__title mb-3">🎤 Голосовой комментарий</div>
+
+                        <div th:if="${voiceAttachment != null}" class="mb-3">
+                            <div class="muted small mb-2">Текущая запись:</div>
+                            <audio controls th:src="@{/files/work/{id}(id=${voiceAttachment.id})}" style="width:100%;"></audio>
+                            <form th:action="@{/student/works/{wid}/attachments/{aid}/delete(wid=${existing.id},aid=${voiceAttachment.id})}" method="post" class="mt-2">
+                                <button type="submit" class="btn btn--ghost btn--sm"
+                                        onclick="return confirm('Удалить запись?')">Удалить запись</button>
+                            </form>
+                        </div>
+
+                        <p class="muted small mb-3" th:text="${voiceAttachment != null ? 'Запишите новую — она заменит текущую при отправке.' : 'Запишите устное пояснение к работе. Будет приложено автоматически при отправке.'}"></p>
                         <div class="row gap-2" id="voice-controls" data-mode="local">
                             <button type="button" id="voice-start" class="btn-rec">● Запись</button>
                             <button type="button" id="voice-stop" class="btn-rec hidden">■ Остановить</button>
@@ -164,6 +169,7 @@
     <footer th:replace="~{components/footer :: bar}"></footer>
 </div>
 
+<script th:src="@{/js/upload.js}"></script>
 <script th:src="@{/js/autosave.js}"></script>
 <script th:src="@{/js/viewer-switch.js}"></script>
 <script th:src="@{/js/ajax-upload.js}"></script>
