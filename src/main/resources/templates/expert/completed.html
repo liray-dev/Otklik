@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{components/head :: head('Завершённые рецензии')}"></head>
+<body>
+<div class="app">
+    <header th:replace="~{components/topbar :: bar(~{::nav}, null)}">
+        <nav class="topbar__nav">
+            <a th:href="@{/expert/queue}">Очередь</a>
+            <a th:href="@{/expert/in-progress}">В работе</a>
+            <a th:href="@{/expert/completed}" class="is-active">Завершено</a>
+        </nav>
+    </header>
+
+    <aside th:replace="~{components/sidebar :: bar(
+        ${ { {'key':'queue','label':'Очередь проверок','href':'/expert/queue','icon':'▤'},
+              {'key':'inprogress','label':'В работе','href':'/expert/in-progress','icon':'✎'},
+              {'key':'completed','label':'Завершено','href':'/expert/completed','icon':'▣'} } },
+        'completed',
+        'Otklik',
+        'СИСТЕМА ПРОВЕРКИ')}"></aside>
+
+    <main class="app__main">
+        <div class="page__hero">
+            <div>
+                <h1 class="page__title">Завершённые рецензии</h1>
+                <p class="page__subtitle">Ваши финальные оценки с разбивкой по критериям.</p>
+            </div>
+        </div>
+
+        <div class="grid grid--3 mb-4">
+            <div class="card metric-card">
+                <div class="metric">
+                    <div>
+                        <div class="card__label">Доступно</div>
+                        <div class="metric__value" th:text="${totalWorksAvailable}">0</div>
+                        <div class="metric__delta is-muted">В очереди</div>
+                    </div>
+                    <div class="metric__icon">📋</div>
+                </div>
+            </div>
+            <div class="card metric-card">
+                <div class="metric">
+                    <div>
+                        <div class="card__label">В процессе</div>
+                        <div class="metric__value" th:text="${inProgressCount}">0</div>
+                        <div class="metric__delta is-muted">У вас сейчас</div>
+                    </div>
+                    <div class="metric__icon">⏳</div>
+                </div>
+            </div>
+            <div class="card metric-card metric-card--accent">
+                <div class="metric">
+                    <div>
+                        <div class="card__label">Завершено</div>
+                        <div class="metric__value" th:text="${completedCount}">0</div>
+                        <div class="metric__delta is-muted">Финальных рецензий</div>
+                    </div>
+                    <div class="metric__icon">✓</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="stack">
+            <div th:each="row : ${doneRows}" class="card" th:with="a=${row.assignment},r=${row.review},criteria=${row.criteria},scores=${row.scores},scaleMax=${row.scaleMax}">
+                <div class="card__head">
+                    <div>
+                        <div class="card__title" th:text="${a.work.title}">Работа</div>
+                        <div class="muted small" th:text="'Кампания: ' + ${a.work.campaign.title}"></div>
+                    </div>
+                    <div class="row gap-3">
+                        <span class="badge badge--done">Проверено</span>
+                        <span th:if="${row.hasReview and r.totalScore != null}" class="metric__value" style="font-size:24px;line-height:1;">
+                            <span th:text="${r.totalScore}">0</span><span class="muted" style="font-size:14px;" th:text="' / ' + ${scaleMax}"></span>
+                        </span>
+                    </div>
+                </div>
+
+                <div class="muted small mb-3" th:if="${a.completedAt != null}" th:text="'Завершено: ' + ${#temporals.format(a.completedAt, 'dd.MM.yyyy HH:mm')}"></div>
+
+                <div th:if="${row.hasReview and not #lists.isEmpty(criteria)}" class="stack mb-3">
+                    <div th:each="crit : ${criteria}" class="slider-row" th:with="value=${scores[crit.id]}">
+                        <span class="label" th:text="${crit.name} + ' (вес ' + ${crit.weight} + '%)'">Критерий</span>
+                        <span class="num" th:text="${value != null ? value : '—'}">—</span>
+                    </div>
+                </div>
+
+                <div th:if="${row.hasReview and r.feedback != null and !#strings.isEmpty(r.feedback)}" class="card" style="background:var(--paper);padding:12px;">
+                    <div class="card__label mb-2">Качественная обратная связь</div>
+                    <div class="small" th:text="${r.feedback}"></div>
+                </div>
+            </div>
+
+            <div th:if="${#lists.isEmpty(doneRows)}" class="card" style="text-align:center;padding:40px;">
+                <div class="muted">Завершённых рецензий пока нет.</div>
+                <a th:href="@{/expert/queue}" class="btn btn--primary mt-3">К очереди</a>
+            </div>
+        </div>
+    </main>
+
+    <footer th:replace="~{components/footer :: bar}"></footer>
+</div>
+</body>
+</html>

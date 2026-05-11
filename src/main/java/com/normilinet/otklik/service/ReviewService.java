@@ -56,6 +56,11 @@ public class ReviewService {
     }
 
     @Transactional(readOnly = true)
+    public java.util.Optional<Review> findByAssignment(UUID assignmentId) {
+        return reviewRepository.findByAssignmentId(assignmentId);
+    }
+
+    @Transactional(readOnly = true)
     public Map<UUID, BigDecimal> currentScores(UUID reviewId) {
         Map<UUID, BigDecimal> out = new HashMap<>();
         for (ReviewScore s : scoreRepository.findAllByReviewId(reviewId)) {

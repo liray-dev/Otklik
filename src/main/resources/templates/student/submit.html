@@ -3,11 +3,12 @@
 <head th:replace="~{components/head :: head('Отправить работу')}"></head>
 <body>
 <div class="app">
-    <header th:replace="~{components/topbar :: bar(~{::nav}, null)}"></header>
-    <nav class="topbar__nav">
-        <a th:href="@{/student/works}">Мои работы</a>
-        <a th:href="@{/student/cycles}" class="is-active">Доступные кампании</a>
-    </nav>
+    <header th:replace="~{components/topbar :: bar(~{::nav}, null)}">
+        <nav class="topbar__nav">
+            <a th:href="@{/student/works}">Мои работы</a>
+            <a th:href="@{/student/cycles}" class="is-active">Доступные кампании</a>
+        </nav>
+    </header>
 
     <aside th:replace="~{components/sidebar :: bar(
         ${ { {'key':'works','label':'Мои работы','href':'/student/works','icon':'▦'},

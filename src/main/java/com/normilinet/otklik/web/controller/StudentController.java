@@ -1,7 +1,9 @@
 package com.normilinet.otklik.web.controller;
 
 import com.normilinet.otklik.domain.enums.AssignmentStatus;
+import com.normilinet.otklik.domain.enums.ReviewStatus;
 import com.normilinet.otklik.domain.model.Campaign;
+import com.normilinet.otklik.domain.model.EvaluationCriterion;
 import com.normilinet.otklik.domain.model.Review;
 import com.normilinet.otklik.domain.model.Work;
 import com.normilinet.otklik.domain.model.WorkAssignment;
@@ -9,6 +11,7 @@ import com.normilinet.otklik.domain.repository.ReviewRepository;
 import com.normilinet.otklik.domain.repository.WorkAssignmentRepository;
 import com.normilinet.otklik.security.CustomUserDetails;
 import com.normilinet.otklik.service.CampaignService;
+import com.normilinet.otklik.service.ReviewService;
 import com.normilinet.otklik.service.WorkService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -22,8 +25,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -37,6 +42,7 @@ public class StudentController {
     private final WorkService workService;
     private final WorkAssignmentRepository assignmentRepository;
     private final ReviewRepository reviewRepository;
+    private final ReviewService reviewService;
 
     @GetMapping("/cycles")
     public String cycles(Model model) {
@@ -51,17 +57,27 @@ public class StudentController {
         for (Work w : works) {
             List<WorkAssignment> assignments = assignmentRepository.findAllByWorkId(w.getId());
             int reviewsDone = (int) assignments.stream().filter(a -> a.getStatus() == AssignmentStatus.COMPLETED).count();
-            List<Review> reviews = new ArrayList<>();
+            List<EvaluationCriterion> criteria = campaignService.getCriteriaForCampaign(w.getCampaign().getId());
+            List<Map<String, Object>> reviewRows = new ArrayList<>();
             for (WorkAssignment a : assignments) {
-                reviewRepository.findByAssignmentId(a.getId()).ifPresent(reviews::add);
+                Review r = reviewRepository.findByAssignmentId(a.getId()).orElse(null);
+                if (r == null || r.getStatus() != ReviewStatus.FINAL) continue;
+                Map<UUID, BigDecimal> scores = reviewService.currentScores(r.getId());
+                Map<String, Object> rr = new HashMap<>();
+                rr.put("review", r);
+                rr.put("assignment", a);
+                rr.put("scores", scores);
+                reviewRows.add(rr);
             }
-            rows.add(Map.of(
-                    "work", w,
-                    "attachments", workService.getAttachments(w.getId()),
-                    "assignmentsTotal", assignments.size(),
-                    "reviewsDone", reviewsDone,
-                    "reviews", reviews
-            ));
+            Map<String, Object> row = new HashMap<>();
+            row.put("work", w);
+            row.put("attachments", workService.getAttachments(w.getId()));
+            row.put("assignmentsTotal", assignments.size());
+            row.put("reviewsDone", reviewsDone);
+            row.put("reviews", reviewRows);
+            row.put("criteria", criteria);
+            row.put("scaleMax", w.getCampaign().getScaleMax());
+            rows.add(row);
         }
         model.addAttribute("rows", rows);
         return "student/works";

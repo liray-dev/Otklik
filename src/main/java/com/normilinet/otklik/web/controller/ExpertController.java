@@ -54,12 +54,55 @@ public class ExpertController {
         long completed = mine.stream().filter(a -> a.getStatus() == AssignmentStatus.COMPLETED).count();
 
         model.addAttribute("availableWorks", available.stream().map(this::asMaskedWork).toList());
-        model.addAttribute("activeAssignments", mine.stream().filter(a -> a.getStatus() == AssignmentStatus.IN_PROGRESS).toList());
-        model.addAttribute("recentDone", mine.stream().filter(a -> a.getStatus() == AssignmentStatus.COMPLETED).limit(10).toList());
         model.addAttribute("totalWorksAvailable", available.size());
         model.addAttribute("inProgressCount", inProgress);
         model.addAttribute("completedCount", completed);
         return "expert/queue";
+    }
+
+    @GetMapping("/in-progress")
+    public String inProgress(@AuthenticationPrincipal CustomUserDetails user, Model model) {
+        List<WorkAssignment> mine = assignmentService.listMyAll(user.getUsername());
+        List<WorkAssignment> active = mine.stream().filter(a -> a.getStatus() == AssignmentStatus.IN_PROGRESS).toList();
+        long inProgress = active.size();
+        long completed = mine.stream().filter(a -> a.getStatus() == AssignmentStatus.COMPLETED).count();
+        long available = assignmentService.listAvailableForReviewer(user.getUsername()).size();
+
+        model.addAttribute("activeAssignments", active);
+        model.addAttribute("totalWorksAvailable", available);
+        model.addAttribute("inProgressCount", inProgress);
+        model.addAttribute("completedCount", completed);
+        return "expert/in_progress";
+    }
+
+    @GetMapping("/completed")
+    public String completed(@AuthenticationPrincipal CustomUserDetails user, Model model) {
+        List<WorkAssignment> mine = assignmentService.listMyAll(user.getUsername());
+        List<WorkAssignment> done = mine.stream().filter(a -> a.getStatus() == AssignmentStatus.COMPLETED).toList();
+        long completed = done.size();
+        long inProgress = mine.stream().filter(a -> a.getStatus() == AssignmentStatus.IN_PROGRESS).count();
+        long available = assignmentService.listAvailableForReviewer(user.getUsername()).size();
+
+        List<Map<String, Object>> rows = new java.util.ArrayList<>();
+        for (WorkAssignment a : done) {
+            Review r = reviewService.findByAssignment(a.getId()).orElse(null);
+            List<EvaluationCriterion> criteria = campaignService.getCriteriaForCampaign(a.getWork().getCampaign().getId());
+            Map<UUID, BigDecimal> scores = r != null ? reviewService.currentScores(r.getId()) : Map.of();
+            rows.add(Map.of(
+                    "assignment", a,
+                    "review", r != null ? r : new Review(),
+                    "hasReview", r != null,
+                    "criteria", criteria,
+                    "scores", scores,
+                    "scaleMax", a.getWork().getCampaign().getScaleMax()
+            ));
+        }
+
+        model.addAttribute("doneRows", rows);
+        model.addAttribute("totalWorksAvailable", available);
+        model.addAttribute("inProgressCount", inProgress);
+        model.addAttribute("completedCount", completed);
+        return "expert/completed";
     }
 
     @PostMapping("/queue/{workId}/take")

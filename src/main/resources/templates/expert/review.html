@@ -3,19 +3,19 @@
 <head th:replace="~{components/head :: head('Интерфейс рецензирования')}"></head>
 <body>
 <div class="app">
-    <header th:replace="~{components/topbar :: bar(~{::nav}, 'Поиск оценок...')}"></header>
-    <nav class="topbar__nav">
-        <a th:href="@{/expert/queue}">Проекты</a>
-        <a class="is-active">Интерфейс рецензирования</a>
-        <a th:href="@{/expert/queue}">Аналитика</a>
-    </nav>
+    <header th:replace="~{components/topbar :: bar(~{::nav}, null)}">
+        <nav class="topbar__nav">
+            <a th:href="@{/expert/queue}">Очередь</a>
+            <a th:href="@{/expert/in-progress}">В работе</a>
+            <a th:href="@{/expert/completed}">Завершено</a>
+        </nav>
+    </header>
 
     <aside th:replace="~{components/sidebar :: bar(
-        ${ { {'key':'overview','label':'Панель организатора','href':'/organizer','icon':'▦'},
-              {'key':'queue','label':'Очередь проверок','href':'/expert/queue','icon':'▤'},
-              {'key':'review','label':'Интерфейс оценки','href':'/expert/queue','icon':'✎'},
-              {'key':'results','label':'Панель результатов','href':'/expert/queue','icon':'▣'} } },
-        'review',
+        ${ { {'key':'queue','label':'Очередь проверок','href':'/expert/queue','icon':'▤'},
+              {'key':'inprogress','label':'В работе','href':'/expert/in-progress','icon':'✎'},
+              {'key':'completed','label':'Завершено','href':'/expert/completed','icon':'▣'} } },
+        'inprogress',
         'Otklik',
         'СИСТЕМА ПРОВЕРКИ')}"></aside>
 

@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{components/head :: head('Взято в работу')}"></head>
+<body>
+<div class="app">
+    <header th:replace="~{components/topbar :: bar(~{::nav}, null)}">
+        <nav class="topbar__nav">
+            <a th:href="@{/expert/queue}">Очередь</a>
+            <a th:href="@{/expert/in-progress}" class="is-active">В работе</a>
+            <a th:href="@{/expert/completed}">Завершено</a>
+        </nav>
+    </header>
+
+    <aside th:replace="~{components/sidebar :: bar(
+        ${ { {'key':'queue','label':'Очередь проверок','href':'/expert/queue','icon':'▤'},
+              {'key':'inprogress','label':'В работе','href':'/expert/in-progress','icon':'✎'},
+              {'key':'completed','label':'Завершено','href':'/expert/completed','icon':'▣'} } },
+        'inprogress',
+        'Otklik',
+        'СИСТЕМА ПРОВЕРКИ')}"></aside>
+
+    <main class="app__main">
+        <div class="page__hero">
+            <div>
+                <h1 class="page__title">В работе</h1>
+                <p class="page__subtitle">Работы, которые вы взяли и ещё не отправили финальную рецензию.</p>
+            </div>
+        </div>
+
+        <div class="grid grid--3 mb-4">
+            <div class="card metric-card">
+                <div class="metric">
+                    <div>
+                        <div class="card__label">Доступно</div>
+                        <div class="metric__value" th:text="${totalWorksAvailable}">0</div>
+                        <div class="metric__delta is-muted">В очереди</div>
+                    </div>
+                    <div class="metric__icon">📋</div>
+                </div>
+            </div>
+            <div class="card metric-card metric-card--accent">
+                <div class="metric">
+                    <div>
+                        <div class="card__label">В процессе</div>
+                        <div class="metric__value" th:text="${inProgressCount}">0</div>
+                        <div class="metric__delta is-muted">У вас сейчас</div>
+                    </div>
+                    <div class="metric__icon">⏳</div>
+                </div>
+            </div>
+            <div class="card metric-card">
+                <div class="metric">
+                    <div>
+                        <div class="card__label">Завершено</div>
+                        <div class="metric__value" th:text="${completedCount}">0</div>
+                        <div class="metric__delta is-muted">Финальных рецензий</div>
+                    </div>
+                    <div class="metric__icon">✓</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="stack">
+            <div th:each="a : ${activeAssignments}" class="active-task">
+                <div class="active-task__head">
+                    <span class="badge badge--inprogress">В процессе</span>
+                    <span class="muted small" th:text="${a.takenAt != null ? 'Взято: ' + #temporals.format(a.takenAt, 'dd MMM HH:mm') : ''}"></span>
+                </div>
+                <div class="active-task__title" th:text="${a.work.title}">Работа</div>
+                <div class="muted small mb-2" th:text="'Кампания: ' + ${a.work.campaign.title}"></div>
+                <div class="active-task__foot">
+                    <span>Откройте, чтобы продолжить рецензирование</span>
+                    <a th:href="@{/expert/review/{id}(id=${a.id})}" class="btn btn--primary btn--sm">Продолжить ▸</a>
+                </div>
+            </div>
+
+            <div th:if="${#lists.isEmpty(activeAssignments)}" class="card" style="text-align:center;padding:40px;">
+                <div class="muted">Нет работ в процессе.</div>
+                <a th:href="@{/expert/queue}" class="btn btn--primary mt-3">Перейти в очередь</a>
+            </div>
+        </div>
+    </main>
+
+    <footer th:replace="~{components/footer :: bar}"></footer>
+</div>
+</body>
+</html>

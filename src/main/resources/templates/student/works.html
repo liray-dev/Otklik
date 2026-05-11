@@ -3,11 +3,12 @@
 <head th:replace="~{components/head :: head('Мои работы')}"></head>
 <body>
 <div class="app">
-    <header th:replace="~{components/topbar :: bar(~{::nav}, null)}"></header>
-    <nav class="topbar__nav">
-        <a th:href="@{/student/works}" class="is-active">Мои работы</a>
-        <a th:href="@{/student/cycles}">Доступные кампании</a>
-    </nav>
+    <header th:replace="~{components/topbar :: bar(~{::nav}, null)}">
+        <nav class="topbar__nav">
+            <a th:href="@{/student/works}" class="is-active">Мои работы</a>
+            <a th:href="@{/student/cycles}">Доступные кампании</a>
+        </nav>
+    </header>
 
     <aside th:replace="~{components/sidebar :: bar(
         ${ { {'key':'works','label':'Мои работы','href':'/student/works','icon':'▦'},
@@ -55,12 +56,23 @@
 
                 <div class="mt-3">
                     <strong class="small" th:text="'Рецензий: ' + ${row.reviewsDone} + ' / ' + ${row.assignmentsTotal}"></strong>
-                    <div th:each="r : ${row.reviews}" class="mt-3" style="padding:12px;border:1px solid var(--border-soft);border-radius:8px;background:var(--paper);">
-                        <div class="row row--between mb-2">
-                            <span class="small"><strong th:text="${r.assignment.reviewer.username}"></strong></span>
-                            <span class="num small" th:text="${r.totalScore != null ? r.totalScore : '—'}">—</span>
+                    <div th:each="rr : ${row.reviews}" class="mt-3" th:with="r=${rr.review},a=${rr.assignment},scores=${rr.scores}"
+                         style="padding:14px;border:1px solid var(--border-soft);border-radius:8px;background:var(--paper);">
+                        <div class="row row--between mb-3">
+                            <span><strong th:text="${a.reviewer.username}">Рецензент</strong></span>
+                            <span th:if="${r.totalScore != null}" class="metric__value" style="font-size:22px;line-height:1;">
+                                <span th:text="${r.totalScore}">0</span><span class="muted" style="font-size:13px;" th:text="' / ' + ${row.scaleMax}"></span>
+                            </span>
                         </div>
-                        <div class="small" th:text="${r.feedback}"></div>
+
+                        <div th:if="${not #lists.isEmpty(row.criteria)}" class="stack mb-3">
+                            <div th:each="crit : ${row.criteria}" class="slider-row" th:with="value=${scores[crit.id]}">
+                                <span class="label small" th:text="${crit.name} + ' (вес ' + ${crit.weight} + '%)'">Критерий</span>
+                                <span class="num small" th:text="${value != null ? value : '—'}">—</span>
+                            </div>
+                        </div>
+
+                        <div th:if="${r.feedback != null and !#strings.isEmpty(r.feedback)}" class="small" th:text="${r.feedback}"></div>
                     </div>
                 </div>
             </div>
