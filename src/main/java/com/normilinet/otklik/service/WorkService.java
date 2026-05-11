@@ -131,6 +131,34 @@ public class WorkService {
         return true;
     }
 
+    @Transactional
+    public Work saveDraft(UUID campaignId,
+                          String username,
+                          String title,
+                          String contentText,
+                          String externalLink) {
+        Campaign campaign = campaignRepository.findById(campaignId)
+                .orElseThrow(() -> new IllegalArgumentException("Кампания не найдена"));
+        User student = userRepository.findByUsername(username)
+                .orElseThrow(() -> new IllegalArgumentException("Студент не найден"));
+        java.util.Optional<Work> existing = workRepository.findByCampaignIdAndStudentId(campaignId, student.getId());
+        Work work = existing.orElseGet(() -> {
+            Work w = new Work();
+            w.setCampaign(campaign);
+            w.setStudent(student);
+            w.setStatus(WorkStatus.UPLOADED);
+            return w;
+        });
+        if (!isEditable(work)) {
+            throw new IllegalStateException("Работа уже взята в проверку и не может быть изменена");
+        }
+        if (title != null && !title.isBlank()) work.setTitle(title);
+        else if (work.getTitle() == null) work.setTitle("Черновик");
+        work.setContentText(contentText);
+        work.setExternalLink(externalLink);
+        return workRepository.save(work);
+    }
+
     @Transactional(readOnly = true)
     public java.util.Optional<Work> findExistingForStudent(UUID campaignId, String username) {
         User student = userRepository.findByUsername(username)

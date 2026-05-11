@@ -167,4 +167,43 @@ public class StudentController {
         workService.deleteAttachment(workId, attachmentId, user.getUsername());
         return "redirect:/student/cycles/" + w.getCampaign().getId() + "/submit";
     }
+
+    @PostMapping("/cycles/{id}/autosave")
+    @org.springframework.web.bind.annotation.ResponseBody
+    public Map<String, Object> autosave(@PathVariable UUID id,
+                                        @AuthenticationPrincipal CustomUserDetails user,
+                                        @RequestParam(required = false) String title,
+                                        @RequestParam(required = false) String contentText,
+                                        @RequestParam(required = false) String externalLink) {
+        Work work = workService.saveDraft(id, user.getUsername(), title, contentText, externalLink);
+        return Map.of(
+                "ok", true,
+                "workId", work.getId().toString(),
+                "status", work.getStatus().name(),
+                "savedAt", java.time.LocalDateTime.now().toString()
+        );
+    }
+
+    @PostMapping("/works/{workId}/files")
+    @org.springframework.web.bind.annotation.ResponseBody
+    public Map<String, Object> uploadFile(@PathVariable UUID workId,
+                                          @AuthenticationPrincipal CustomUserDetails user,
+                                          @RequestParam("file") org.springframework.web.multipart.MultipartFile file) throws IOException {
+        Work w = workService.getById(workId);
+        if (!w.getStudent().getUsername().equals(user.getUsername())) {
+            throw new SecurityException("Не ваша работа");
+        }
+        if (!workService.isEditable(w)) {
+            throw new IllegalStateException("Работа уже взята в проверку");
+        }
+        com.normilinet.otklik.domain.model.WorkAttachment att = workService.attachFile(w, file);
+        return Map.of(
+                "ok", true,
+                "attachment", Map.of(
+                        "id", att.getId().toString(),
+                        "filename", att.getOriginalFilename(),
+                        "kind", att.getKind().name()
+                )
+        );
+    }
 }

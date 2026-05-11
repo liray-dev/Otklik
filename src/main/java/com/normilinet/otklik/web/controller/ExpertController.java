@@ -173,6 +173,18 @@ public class ExpertController {
         return "redirect:/expert/review/" + assignmentId + "?saved";
     }
 
+    @PostMapping("/review/{assignmentId}/autosave")
+    @org.springframework.web.bind.annotation.ResponseBody
+    public Map<String, Object> autosave(@AuthenticationPrincipal CustomUserDetails user,
+                                        @PathVariable UUID assignmentId,
+                                        @RequestParam(required = false) String feedback,
+                                        @RequestParam(value = "criterionId", required = false) List<String> criterionIds,
+                                        @RequestParam(value = "criterionScore", required = false) List<String> criterionScores) {
+        Map<UUID, BigDecimal> scoreMap = buildScores(criterionIds, criterionScores);
+        reviewService.saveDraft(assignmentId, user.getUsername(), feedback, scoreMap);
+        return Map.of("ok", true, "savedAt", java.time.LocalDateTime.now().toString());
+    }
+
     @PostMapping("/review/{assignmentId}/submit")
     public String submitFinal(@AuthenticationPrincipal CustomUserDetails user,
                               @PathVariable UUID assignmentId,

@@ -55,19 +55,25 @@
             </div>
         </div>
 
-        <form th:action="@{/student/cycles/{id}/submit(id=${campaign.id})}" method="post" enctype="multipart/form-data" id="cycle-form">
+        <form th:action="@{/student/cycles/{id}/submit(id=${campaign.id})}" method="post" enctype="multipart/form-data" id="cycle-form"
+              th:data-autosave-url="@{/student/cycles/{id}/autosave(id=${campaign.id})}">
             <div class="grid grid--main">
                 <div class="stack">
                     <div class="card">
-                        <label class="field__label" for="title">Название работы</label>
+                        <div class="row row--between">
+                            <label class="field__label" for="title">Название работы</label>
+                            <span data-autosave-anchor></span>
+                        </div>
                         <input id="title" name="title" class="input mt-2"
                                th:value="${existing != null ? existing.title : ''}"
                                placeholder="напр. Диплом — Анализ устойчивости архитектуры" required
+                               data-autosave-field
                                th:disabled="${existing != null and !editable}">
 
                         <label class="field__label mt-4" for="contentText">Текст / описание</label>
                         <textarea id="contentText" name="contentText" class="textarea mt-2" rows="6"
                                   placeholder="Опишите вашу работу или вставьте текст ответа..."
+                                  data-autosave-field
                                   th:text="${existing != null ? existing.contentText : ''}"
                                   th:disabled="${existing != null and !editable}"></textarea>
 
@@ -75,14 +81,22 @@
                         <input id="externalLink" name="externalLink" class="input mt-2"
                                th:value="${existing != null ? existing.externalLink : ''}"
                                placeholder="https://github.com/... или https://docs.google.com/..."
+                               data-autosave-field
                                th:disabled="${existing != null and !editable}">
                     </div>
 
                     <div class="card">
                         <label class="field__label">Файлы работы</label>
-                        <div th:if="${not #lists.isEmpty(attachments)}" class="row gap-2 mt-2" style="flex-wrap:wrap;">
+                        <div class="row gap-2 mt-2" style="flex-wrap:wrap;"
+                             data-file-switcher
+                             data-viewer-target=".work-viewer"
+                             data-file-base="/files/work/"
+                             data-preview-base="/files/work/"
+                             th:attr="data-work-id=${existing != null ? existing.id : ''}">
                             <span th:each="att : ${attachments}" class="row gap-1">
-                                <a th:href="@{/student/cycles/{cid}/submit(cid=${campaign.id},file=${att.id})}"
+                                <a href="#"
+                                   th:data-file-tab="${att.id}"
+                                   th:data-file-name="${att.originalFilename}"
                                    th:classappend="${activeAttachment != null and att.id == activeAttachment.id} ? 'btn--primary' : 'btn--ghost'"
                                    class="btn btn--sm"
                                    th:text="${att.originalFilename}">file</a>
@@ -92,26 +106,28 @@
                             </span>
                         </div>
 
-                        <div th:if="${activeAttachment != null}" class="viewer mt-3">
+                        <div class="viewer mt-3 work-viewer" th:style="${activeAttachment == null} ? 'display:none;' : ''">
                             <div class="viewer__head">
-                                <div class="viewer__filename" th:text="${activeAttachment.originalFilename}">file</div>
+                                <div class="viewer__filename" th:text="${activeAttachment != null ? activeAttachment.originalFilename : ''}">file</div>
                                 <div class="viewer__actions">
-                                    <a th:href="@{/files/work/{id}(id=${activeAttachment.id})}" target="_blank" class="icon-btn" title="Открыть в новой вкладке">↗</a>
-                                    <a th:href="@{/files/work/{id}(id=${activeAttachment.id},disposition='attachment')}" class="icon-btn" title="Скачать">↓</a>
+                                    <a th:href="${activeAttachment != null} ? @{/files/work/{id}(id=${activeAttachment.id})} : '#'"
+                                       data-viewer-link="inline" target="_blank" class="icon-btn" title="Открыть в новой вкладке">↗</a>
+                                    <a th:href="${activeAttachment != null} ? @{/files/work/{id}(id=${activeAttachment.id},disposition='attachment')} : '#'"
+                                       data-viewer-link="attachment" class="icon-btn" title="Скачать">↓</a>
                                 </div>
                             </div>
                             <div class="viewer__body">
-                                <iframe th:src="@{/files/work/{id}/preview(id=${activeAttachment.id})}" style="width:100%;height:520px;border:0;"></iframe>
+                                <iframe th:src="${activeAttachment != null} ? @{/files/work/{id}/preview(id=${activeAttachment.id})} : 'about:blank'"
+                                        style="width:100%;height:520px;border:0;"></iframe>
                             </div>
                         </div>
 
                         <div th:if="${editable}" id="dropzone" class="dropzone mt-3">
                             <div class="dropzone__icon">📤</div>
-                            <div class="dropzone__main">Перетащите файлы сюда</div>
+                            <div class="dropzone__main">Выберите файлы (загрузятся автоматически)</div>
                             <div class="dropzone__sub">PDF, DOCX, XLSX, изображения, аудио, видео, ZIP (макс. 100 МБ)</div>
-                            <input id="file-input" name="files" type="file" multiple class="hidden">
+                            <input id="file-input" name="files" type="file" multiple class="hidden" data-ajax-upload>
                         </div>
-                        <ul id="file-list" class="stack mt-3" style="gap:8px;"></ul>
                     </div>
                 </div>
 
@@ -130,15 +146,15 @@
                     </div>
 
                     <div class="card card--dark">
-                        <div class="card__title" style="color:#fff" th:text="${existing != null ? 'Сохранить изменения' : 'Перед отправкой'}">Перед отправкой</div>
+                        <div class="card__title" style="color:#fff" th:text="${existing != null ? 'Опубликовать изменения' : 'Опубликовать работу'}">Опубликовать</div>
                         <ul class="mt-3" style="color:var(--ink-300);font-size:13px;list-style:none;padding:0;">
-                            <li class="mt-2">— Одна работа на кампанию</li>
+                            <li class="mt-2">— Текст и файлы сохраняются автоматически</li>
+                            <li class="mt-2">— Кнопка ниже отправляет работу в очередь экспертам</li>
                             <li class="mt-2">— Редактирование доступно пока рецензент не взял работу</li>
-                            <li class="mt-2">— Прикрепляйте файлы или указывайте ссылку</li>
                         </ul>
                         <button type="submit" class="btn btn--primary btn--block btn--lg mt-4"
-                                th:text="${existing != null ? 'Сохранить' : 'Отправить на проверку'}"
-                                th:disabled="${existing != null and !editable}">Отправить</button>
+                                th:text="${existing != null and existing.status.name() == 'NEEDS_REVISION' ? 'Отправить доработку' : (existing != null and existing.status.name() != 'UPLOADED' ? 'Обновить' : 'Опубликовать')}"
+                                th:disabled="${existing != null and !editable}">Опубликовать</button>
                     </div>
                 </div>
             </div>
@@ -148,7 +164,9 @@
     <footer th:replace="~{components/footer :: bar}"></footer>
 </div>
 
-<script th:src="@{/js/upload.js}"></script>
+<script th:src="@{/js/autosave.js}"></script>
+<script th:src="@{/js/viewer-switch.js}"></script>
+<script th:src="@{/js/ajax-upload.js}"></script>
 <script th:src="@{/js/recorder.js}"></script>
 </body>
 </html>

@@ -40,7 +40,8 @@
             </div>
         </div>
 
-        <form id="review-form" th:action="@{/expert/review/{id}/submit(id=${assignment.id})}" method="post">
+        <form id="review-form" th:action="@{/expert/review/{id}/submit(id=${assignment.id})}" method="post"
+              th:data-autosave-url="@{/expert/review/{id}/autosave(id=${assignment.id})}">
             <div class="grid grid--main">
                 <div class="stack">
                     <div th:if="${work.work.contentText != null and !#strings.isEmpty(work.work.contentText)}" class="card">
@@ -55,26 +56,32 @@
 
                     <div th:if="${not #lists.isEmpty(attachments)}" class="card">
                         <div class="card__label mb-3" th:text="'Файлы работы (' + ${#lists.size(attachments)} + ')'">Файлы</div>
-                        <div class="row gap-2" style="flex-wrap:wrap;">
+                        <div class="row gap-2" style="flex-wrap:wrap;"
+                             data-file-switcher
+                             data-viewer-target=".work-viewer"
+                             data-file-base="/files/work/"
+                             data-preview-base="/files/work/">
                             <a th:each="att : ${attachments}"
-                               th:href="@{/expert/review/{aid}(aid=${assignment.id},file=${att.id})}"
+                               href="#"
+                               th:data-file-tab="${att.id}"
+                               th:data-file-name="${att.originalFilename}"
                                th:classappend="${activeAttachment != null and att.id == activeAttachment.id} ? 'btn--primary' : 'btn--ghost'"
                                class="btn btn--sm"
                                th:text="${att.originalFilename}">file</a>
                         </div>
                     </div>
 
-                    <div class="viewer" th:if="${activeAttachment != null}">
+                    <div class="viewer work-viewer" th:if="${activeAttachment != null}">
                         <div class="viewer__head">
                             <div class="viewer__filename">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                                 <span th:text="${activeAttachment.originalFilename}">file</span>
                             </div>
                             <div class="viewer__actions">
-                                <a th:href="@{/files/work/{id}(id=${activeAttachment.id})}" target="_blank" class="icon-btn" title="Открыть в новой вкладке">
+                                <a th:href="@{/files/work/{id}(id=${activeAttachment.id})}" data-viewer-link="inline" target="_blank" class="icon-btn" title="Открыть в новой вкладке">
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
                                 </a>
-                                <a th:href="@{/files/work/{id}(id=${activeAttachment.id},disposition='attachment')}" class="icon-btn" title="Скачать">
+                                <a th:href="@{/files/work/{id}(id=${activeAttachment.id},disposition='attachment')}" data-viewer-link="attachment" class="icon-btn" title="Скачать">
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                                 </a>
                             </div>
@@ -96,16 +103,20 @@
 
                 <div class="stack">
                     <div class="card">
-                        <div class="card__title mb-3">📊 Критерии оценки</div>
+                        <div class="row row--between mb-3">
+                            <div class="card__title">📊 Критерии оценки</div>
+                            <span data-autosave-anchor></span>
+                        </div>
                         <div th:each="crit : ${criteria}" class="slider-row" th:with="current=${scoresByCriterion[crit.id]}">
                             <span class="label" th:text="${crit.name}">Критерий</span>
                             <span class="value" th:id="'value-' + ${crit.id}" th:text="${current != null ? current : '—'}">—</span>
-                            <input type="hidden" name="criterionId" th:value="${crit.id}">
+                            <input type="hidden" name="criterionId" th:value="${crit.id}" data-autosave-field>
                             <input type="range" name="criterionScore"
                                    min="0" th:max="${scaleMax}" step="0.1"
                                    th:value="${current != null ? current : 0}"
                                    th:attr="data-target=${'value-' + crit.id}"
-                                   class="js-criterion-slider">
+                                   class="js-criterion-slider"
+                                   data-autosave-field>
                         </div>
                         <div th:if="${#lists.isEmpty(criteria)}" class="muted">Для этой кампании критерии не настроены.</div>
                     </div>
@@ -130,11 +141,9 @@
                         <div id="voice-preview" th:class="${reviewVoice != null} ? 'mb-3' : 'mb-3 hidden'">
                             <audio id="voice-audio" controls style="width:100%;" th:src="${reviewVoice != null} ? @{/files/review/{id}(id=${reviewVoice.id})} : null"></audio>
                         </div>
-                        <textarea name="feedback" class="textarea" rows="6" placeholder="Введите ваши общие комментарии здесь..." th:text="${review.feedback}"></textarea>
-                        <div class="row gap-2 mt-3">
-                            <button type="button" id="attach-link-btn" class="btn btn--ghost btn--sm">📎 Прикрепить ссылки</button>
-                            <button type="submit" formaction="" th:formaction="@{/expert/review/{id}/draft(id=${assignment.id})}" class="btn btn--ghost btn--sm">💾 Сохранить черновик</button>
-                        </div>
+                        <textarea name="feedback" class="textarea" rows="6" placeholder="Введите ваши общие комментарии здесь..."
+                                  data-autosave-field
+                                  th:text="${review.feedback}"></textarea>
                     </div>
 
                     <div class="row gap-2">
@@ -145,10 +154,6 @@
                     </div>
                 </div>
             </div>
-        </form>
-
-        <form id="link-form" th:action="@{/expert/review/{id}/link(id=${assignment.id})}" method="post" class="hidden">
-            <input name="url" type="url" class="input" placeholder="https://...">
         </form>
 
         <form th:action="@{/expert/review/{id}/revision(id=${assignment.id})}" method="post" class="mt-3"
@@ -171,5 +176,7 @@
 
 <script th:src="@{/js/slider.js}"></script>
 <script th:src="@{/js/recorder.js}"></script>
+<script th:src="@{/js/autosave.js}"></script>
+<script th:src="@{/js/viewer-switch.js}"></script>
 </body>
 </html>

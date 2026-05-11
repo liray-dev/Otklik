@@ -70,7 +70,8 @@ public class AssignmentService {
             throw new IllegalStateException("Вы не можете рецензировать эту работу");
         }
         boolean already = assignmentRepository.findAllByWorkId(workId).stream()
-                .anyMatch(a -> a.getReviewer().getId().equals(reviewer.getId()));
+                .anyMatch(a -> a.getReviewer().getId().equals(reviewer.getId())
+                        && a.getStatus() != AssignmentStatus.ABANDONED);
         if (already) {
             throw new IllegalStateException("Вы уже взяли эту работу");
         }
@@ -126,6 +127,7 @@ public class AssignmentService {
 
     private Set<UUID> collectMyWorkIds(User reviewer) {
         return assignmentRepository.findAllByReviewerIdOrderByCreatedAtDesc(reviewer.getId()).stream()
+                .filter(a -> a.getStatus() != AssignmentStatus.ABANDONED)
                 .map(a -> a.getWork().getId())
                 .collect(java.util.stream.Collectors.toSet());
     }
