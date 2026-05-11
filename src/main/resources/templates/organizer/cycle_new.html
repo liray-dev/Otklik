@@ -40,13 +40,14 @@
                     </div>
 
                     <div class="card">
-                        <label class="field__label">Загрузка объектов</label>
-                        <div id="dropzone" class="dropzone mt-2">
+                        <label class="field__label">Материалы для студентов</label>
+                        <p class="muted small mt-2" style="margin-bottom:12px;">Файлы и ссылки, прикреплённые здесь, увидят студенты при отправке работы. Это инструкции, шаблоны, примеры — НЕ оцениваются.</p>
+                        <div id="dropzone" class="dropzone">
                             <div class="dropzone__icon">
                                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                             </div>
                             <div class="dropzone__main">Перетащите файлы сюда</div>
-                            <div class="dropzone__sub">Принимаются файлы PDF, DOCX, XLSX, изображения, аудио, видео, ZIP (макс. 100 МБ на файл)</div>
+                            <div class="dropzone__sub">PDF, DOCX, XLSX, изображения, аудио, видео, ZIP (макс. 100 МБ на файл)</div>
                             <input id="file-input" name="files" type="file" multiple class="hidden">
                         </div>
                         <ul id="file-list" class="stack mt-3" style="gap:8px;"></ul>
@@ -162,10 +163,9 @@
                     <div class="card card--dark">
                         <div class="card__title" style="color:#fff">Итоги</div>
                         <div class="mt-3">
-                            <div class="card__row"><span>Выбрано рецензентов</span><strong>—</strong></div>
-                            <div class="card__row"><span>Ожидаемая длительность</span>
+                            <div class="card__row"><span>Дедлайн</span>
                                 <strong>
-                                    <input name="expectedDurationDays" type="number" min="1" value="14" style="width:60px;background:transparent;border:0;color:#fff;text-align:right;font-weight:700;"> дней
+                                    <input name="deadline" type="date" required style="background:transparent;border:0;color:#fff;font-weight:700;text-align:right;color-scheme:dark;">
                                 </strong>
                             </div>
                             <div class="card__row"><span>Уровень анонимности</span><strong id="summary-anon">Double-Blind</strong></div>
@@ -175,22 +175,7 @@
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>
                             Запустить цикл оценки
                         </button>
-                        <p class="mt-3" style="color:var(--ink-300);font-size:12px;text-align:center;">Система уведомит всех назначенных рецензентов после запуска.</p>
-                    </div>
-
-                    <div class="card">
-                        <div class="row gap-2">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                            <strong>Предпросмотр для рецензента</strong>
-                        </div>
-                        <div class="mt-3" style="display:flex;gap:6px;">
-                            <span style="height:24px;width:24px;border-radius:6px;background:var(--paper);"></span>
-                            <span style="height:24px;width:24px;border-radius:6px;background:var(--paper);"></span>
-                            <span style="height:24px;width:24px;border-radius:6px;background:var(--paper);"></span>
-                            <span style="height:24px;width:24px;border-radius:6px;background:var(--paper);"></span>
-                        </div>
-                        <div class="mt-3" style="height:8px;border-radius:4px;background:var(--paper);"></div>
-                        <div class="mt-2" style="height:8px;border-radius:4px;background:var(--paper);width:70%;"></div>
+                        <p class="mt-3" style="color:var(--ink-300);font-size:12px;text-align:center;">После дедлайна студенты больше не смогут отправлять работы.</p>
                     </div>
                 </div>
             </div>

@@ -12,10 +12,11 @@
 
     <aside th:replace="~{components/sidebar :: bar(
         ${ { {'key':'works','label':'Мои работы','href':'/student/works','icon':'▦'},
-              {'key':'cycles','label':'Доступные кампании','href':'/student/cycles','icon':'▤'} } },
+              {'key':'cycles','label':'Доступные кампании','href':'/student/cycles','icon':'▤'},
+              {'key':'profile','label':'Профиль','href':'/profile','icon':'◉'} } },
         'cycles',
         'Otklik',
-        'СИСТЕМА ПРОВЕРКИ')}"></aside>
+        'ЛИЧНЫЙ КАБИНЕТ')}"></aside>
 
     <main class="app__main">
         <div class="page__hero">
@@ -37,16 +38,20 @@
                 </tr>
                 </thead>
                 <tbody>
-                <tr th:each="c : ${campaigns}">
+                <tr th:each="row : ${rows}" th:with="c=${row.campaign},w=${row.existing}">
                     <td><strong th:text="${c.title}"></strong></td>
                     <td class="muted small" th:text="${c.description}"></td>
                     <td><span class="tag" th:text="${c.mode}"></span></td>
                     <td class="muted small" th:text="${c.deadline != null ? #temporals.format(c.deadline, 'dd.MM.yyyy HH:mm') : 'Без ограничений'}"></td>
                     <td class="text-right">
-                        <a th:href="@{/student/cycles/{id}/submit(id=${c.id})}" class="btn btn--primary btn--sm">Отправить работу</a>
+                        <span th:if="${w != null and w.status.name() == 'NEEDS_REVISION'}" class="badge badge--wait">Нужны правки</span>
+                        <span th:if="${w != null and w.status.name() == 'UNDER_REVIEW'}" class="badge badge--inprogress">В проверке</span>
+                        <span th:if="${w != null and w.status.name() == 'REVIEWED'}" class="badge badge--done">Проверено</span>
+                        <a th:href="@{/student/cycles/{id}/submit(id=${c.id})}" class="btn btn--primary btn--sm"
+                           th:text="${w == null ? 'Отправить работу' : 'Открыть'}">Отправить работу</a>
                     </td>
                 </tr>
-                <tr th:if="${#lists.isEmpty(campaigns)}">
+                <tr th:if="${#lists.isEmpty(rows)}">
                     <td colspan="5" class="muted" style="text-align:center;padding:32px;">Активных кампаний нет.</td>
                 </tr>
                 </tbody>

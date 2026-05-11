@@ -45,8 +45,17 @@ public class StudentController {
     private final ReviewService reviewService;
 
     @GetMapping("/cycles")
-    public String cycles(Model model) {
-        model.addAttribute("campaigns", campaignService.getActiveCampaigns());
+    public String cycles(@AuthenticationPrincipal CustomUserDetails user, Model model) {
+        java.util.List<Campaign> active = campaignService.getActiveCampaigns();
+        java.util.List<Map<String, Object>> rows = new ArrayList<>();
+        for (Campaign c : active) {
+            java.util.Optional<Work> mine = workService.findExistingForStudent(c.getId(), user.getUsername());
+            Map<String, Object> row = new HashMap<>();
+            row.put("campaign", c);
+            row.put("existing", mine.orElse(null));
+            rows.add(row);
+        }
+        model.addAttribute("rows", rows);
         return "student/cycles";
     }
 
@@ -84,9 +93,18 @@ public class StudentController {
     }
 
     @GetMapping("/cycles/{id}/submit")
-    public String submitForm(@PathVariable UUID id, Model model) {
+    public String submitForm(@PathVariable UUID id,
+                             @AuthenticationPrincipal CustomUserDetails user,
+                             Model model) {
         Campaign campaign = campaignService.getCampaignById(id);
+        java.util.Optional<Work> existing = workService.findExistingForStudent(id, user.getUsername());
+        Work work = existing.orElse(null);
+        boolean editable = work == null || workService.isEditable(work);
         model.addAttribute("campaign", campaign);
+        model.addAttribute("existing", work);
+        model.addAttribute("attachments", work != null ? workService.getAttachments(work.getId()) : java.util.List.of());
+        model.addAttribute("editable", editable);
+        model.addAttribute("materials", campaignService.getMaterials(id));
         return "student/submit";
     }
 
@@ -110,5 +128,14 @@ public class StudentController {
             }
         }
         return "redirect:/student/works?submitted";
+    }
+
+    @PostMapping("/works/{workId}/attachments/{attachmentId}/delete")
+    public String deleteAttachment(@AuthenticationPrincipal CustomUserDetails user,
+                                   @PathVariable UUID workId,
+                                   @PathVariable UUID attachmentId) throws IOException {
+        Work w = workService.getById(workId);
+        workService.deleteAttachment(workId, attachmentId, user.getUsername());
+        return "redirect:/student/cycles/" + w.getCampaign().getId() + "/submit";
     }
 }

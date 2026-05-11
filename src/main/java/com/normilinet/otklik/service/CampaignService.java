@@ -29,6 +29,8 @@ public class CampaignService {
     private final CampaignRepository campaignRepository;
     private final EvaluationCriterionRepository criterionRepository;
     private final WorkRepository workRepository;
+    private final com.normilinet.otklik.domain.repository.CampaignAttachmentRepository campaignAttachmentRepository;
+    private final FileStorageService storage;
 
     @Transactional(readOnly = true)
     public List<Campaign> getAllCampaigns() {
@@ -131,4 +133,34 @@ public class CampaignService {
     }
 
     public record CriterionInput(String name, String description, BigDecimal weight) {}
+
+    @Transactional
+    public com.normilinet.otklik.domain.model.CampaignAttachment addFileMaterial(UUID campaignId,
+                                                                                  org.springframework.web.multipart.MultipartFile file) throws java.io.IOException {
+        Campaign c = getCampaignById(campaignId);
+        FileStorageService.StoredFile stored = storage.store(file, "campaigns/" + campaignId + "/materials");
+        com.normilinet.otklik.domain.model.CampaignAttachment att = new com.normilinet.otklik.domain.model.CampaignAttachment();
+        att.setCampaign(c);
+        att.setKind(FileStorageService.classify(stored.originalName(), stored.mimeType()));
+        att.setOriginalFilename(stored.originalName());
+        att.setStoredPath(stored.relativePath());
+        att.setMimeType(stored.mimeType() != null ? stored.mimeType() : FileStorageService.guessMime(stored.originalName()));
+        att.setSizeBytes(stored.size());
+        return campaignAttachmentRepository.save(att);
+    }
+
+    @Transactional
+    public com.normilinet.otklik.domain.model.CampaignAttachment addLinkMaterial(UUID campaignId, String url) {
+        Campaign c = getCampaignById(campaignId);
+        com.normilinet.otklik.domain.model.CampaignAttachment att = new com.normilinet.otklik.domain.model.CampaignAttachment();
+        att.setCampaign(c);
+        att.setKind(com.normilinet.otklik.domain.enums.FileKind.LINK);
+        att.setExternalUrl(url);
+        return campaignAttachmentRepository.save(att);
+    }
+
+    @Transactional(readOnly = true)
+    public java.util.List<com.normilinet.otklik.domain.model.CampaignAttachment> getMaterials(UUID campaignId) {
+        return campaignAttachmentRepository.findAllByCampaignIdOrderByCreatedAtAsc(campaignId);
+    }
 }

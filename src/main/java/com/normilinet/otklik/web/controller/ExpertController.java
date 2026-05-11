@@ -40,6 +40,7 @@ public class ExpertController {
     private final WorkService workService;
     private final CampaignService campaignService;
     private final WorkAssignmentRepository assignmentRepository;
+    private final com.normilinet.otklik.service.NotificationService notificationService;
 
     @GetMapping
     public String dashboard() {
@@ -108,6 +109,13 @@ public class ExpertController {
     @PostMapping("/queue/{workId}/take")
     public String take(@AuthenticationPrincipal CustomUserDetails user, @PathVariable UUID workId) {
         WorkAssignment a = assignmentService.take(workId, user.getUsername());
+        AnonymityMode anon = a.getWork().getCampaign().getAnonymityMode();
+        boolean hideReviewer = anon == AnonymityMode.DOUBLE_BLIND;
+        String who = hideReviewer ? "Рецензент" : user.getUsername();
+        notificationService.push(a.getWork().getStudent(),
+                "WORK_TAKEN",
+                who + " взял вашу работу «" + a.getWork().getTitle() + "» на проверку.",
+                "/student/works");
         return "redirect:/expert/review/" + a.getId();
     }
 
@@ -164,7 +172,12 @@ public class ExpertController {
                               @RequestParam(value = "criterionId", required = false) List<String> criterionIds,
                               @RequestParam(value = "criterionScore", required = false) List<String> criterionScores) {
         Map<UUID, BigDecimal> scoreMap = buildScores(criterionIds, criterionScores);
-        reviewService.submitFinal(assignmentId, user.getUsername(), feedback, scoreMap);
+        Review r = reviewService.submitFinal(assignmentId, user.getUsername(), feedback, scoreMap);
+        WorkAssignment a = r.getAssignment();
+        notificationService.push(a.getWork().getStudent(),
+                "REVIEW_FINAL",
+                "Получена финальная рецензия на работу «" + a.getWork().getTitle() + "».",
+                "/student/works");
         return "redirect:/expert/queue?submitted";
     }
 
@@ -181,6 +194,16 @@ public class ExpertController {
     public String abandon(@AuthenticationPrincipal CustomUserDetails user, @PathVariable UUID assignmentId) {
         assignmentService.abandon(assignmentId, user.getUsername());
         return "redirect:/expert/queue";
+    }
+
+    @PostMapping("/review/{assignmentId}/revision")
+    public String sendForRevision(@AuthenticationPrincipal CustomUserDetails user,
+                                  @PathVariable UUID assignmentId,
+                                  @RequestParam(required = false) String comment) {
+        Work w = reviewService.sendBackForRevision(assignmentId, user.getUsername(), comment);
+        String msg = "Ваша работа «" + w.getTitle() + "» отправлена на доработку рецензентом " + user.getUsername() + ".";
+        notificationService.push(w.getStudent(), "NEEDS_REVISION", msg, "/student/cycles/" + w.getCampaign().getId() + "/submit");
+        return "redirect:/expert/queue?revision";
     }
 
     private Map<UUID, BigDecimal> buildScores(List<String> ids, List<String> scores) {

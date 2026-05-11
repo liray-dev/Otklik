@@ -5,6 +5,8 @@ import com.normilinet.otklik.domain.model.Invite;
 import com.normilinet.otklik.domain.model.User;
 import com.normilinet.otklik.domain.repository.InviteRepository;
 import com.normilinet.otklik.domain.repository.UserRepository;
+import com.normilinet.otklik.domain.repository.CampaignRepository;
+import com.normilinet.otklik.service.AdminService;
 import com.normilinet.otklik.service.InviteService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
@@ -28,6 +30,8 @@ public class AdminController {
     private final UserRepository userRepository;
     private final InviteRepository inviteRepository;
     private final InviteService inviteService;
+    private final AdminService adminService;
+    private final CampaignRepository campaignRepository;
 
     @GetMapping
     public String dashboard(Model model) {
@@ -75,5 +79,29 @@ public class AdminController {
         invite.setActive(false);
         inviteRepository.save(invite);
         return "redirect:/admin/invites";
+    }
+
+    @PostMapping("/users/{id}/delete")
+    public String deleteUser(@PathVariable UUID id) {
+        adminService.deleteUser(id);
+        return "redirect:/admin/users";
+    }
+
+    @GetMapping("/settings")
+    public String settings(Model model) {
+        model.addAttribute("campaigns", campaignRepository.findAll());
+        return "admin/settings";
+    }
+
+    @PostMapping("/settings/reset-campaign")
+    public String resetCampaign(@RequestParam UUID campaignId) {
+        adminService.resetCampaign(campaignId);
+        return "redirect:/admin/settings?reset";
+    }
+
+    @PostMapping("/settings/reset-all")
+    public String resetAll() {
+        adminService.resetAll();
+        return "redirect:/admin/settings?resetAll";
     }
 }

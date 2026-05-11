@@ -17,6 +17,7 @@ public interface WorkRepository extends JpaRepository<Work, UUID> {
     List<Work> findAllByStudentIdOrderByCreatedAtDesc(UUID studentId);
     List<Work> findAllByCampaignIdAndStatus(UUID campaignId, WorkStatus status);
     List<Work> findAllByStatus(WorkStatus status);
+    Optional<Work> findByCampaignIdAndStudentId(UUID campaignId, UUID studentId);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select w from Work w where w.id = :id")

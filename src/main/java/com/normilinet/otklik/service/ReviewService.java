@@ -101,6 +101,25 @@ public class ReviewService {
     }
 
     @Transactional
+    public Work sendBackForRevision(UUID assignmentId, String reviewerUsername, String comment) {
+        WorkAssignment assignment = assignmentRepository.findById(assignmentId)
+                .orElseThrow(() -> new IllegalArgumentException("Назначение не найдено"));
+        if (!assignment.getReviewer().getUsername().equals(reviewerUsername)) {
+            throw new SecurityException("Не ваше назначение");
+        }
+        Review review = getOrCreateDraft(assignmentId, reviewerUsername);
+        if (comment != null && !comment.isBlank()) {
+            review.setFeedback(comment);
+            reviewRepository.save(review);
+        }
+        assignment.setStatus(AssignmentStatus.ABANDONED);
+        assignmentRepository.save(assignment);
+        Work w = assignment.getWork();
+        w.setStatus(WorkStatus.NEEDS_REVISION);
+        return workRepository.save(w);
+    }
+
+    @Transactional
     public ReviewAttachment attachVoice(UUID reviewId, byte[] audio, Long durationMs) throws IOException {
         Review review = reviewRepository.findById(reviewId)
                 .orElseThrow(() -> new IllegalArgumentException("Отзыв не найден"));

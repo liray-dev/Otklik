@@ -37,6 +37,7 @@ public class FileController {
     private final WorkAttachmentRepository workAttachmentRepository;
     private final ReviewAttachmentRepository reviewAttachmentRepository;
     private final WorkAssignmentRepository assignmentRepository;
+    private final com.normilinet.otklik.domain.repository.CampaignAttachmentRepository campaignAttachmentRepository;
     private final FileStorageService storage;
     private final DocumentRenderService renderer;
 
@@ -95,6 +96,21 @@ public class FileController {
         String html = renderer.renderToHtml(file, att.getOriginalFilename());
         model.addAttribute("html", html);
         return "viewer/html";
+    }
+
+    @GetMapping("/files/campaign/{id}")
+    public ResponseEntity<UrlResource> serveCampaignMaterial(@PathVariable UUID id,
+                                                             @RequestParam(defaultValue = "inline") String disposition) throws IOException {
+        com.normilinet.otklik.domain.model.CampaignAttachment att = campaignAttachmentRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Файл не найден"));
+        if (att.getStoredPath() == null) return ResponseEntity.notFound().build();
+        Path file = storage.resolve(att.getStoredPath());
+        UrlResource resource = new UrlResource(file.toUri());
+        String mime = att.getMimeType() != null ? att.getMimeType() : FileStorageService.guessMime(att.getOriginalFilename());
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(mime))
+                .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition(disposition, att.getOriginalFilename()))
+                .body(resource);
     }
 
     @GetMapping("/files/review/{id}")

@@ -79,7 +79,6 @@ public class OrganizerController {
                               @RequestParam(defaultValue = "EXPERT") String mode,
                               @RequestParam(defaultValue = "OPEN") String anonymity,
                               @RequestParam(required = false, defaultValue = "10") Integer scaleMax,
-                              @RequestParam(required = false) Integer expectedDurationDays,
                               @RequestParam(required = false) String deadline,
                               @RequestParam(value = "criterionName", required = false) List<String> criterionNames,
                               @RequestParam(value = "criterionWeight", required = false) List<String> criterionWeights,
@@ -88,31 +87,33 @@ public class OrganizerController {
                               @RequestParam(value = "files", required = false) List<MultipartFile> files) throws IOException {
         User organizer = userRepository.findByUsername(user.getUsername()).orElseThrow();
 
-        LocalDateTime deadlineDt = (deadline != null && !deadline.isBlank()) ? LocalDateTime.parse(deadline) : null;
+        LocalDateTime deadlineDt = null;
+        if (deadline != null && !deadline.isBlank()) {
+            String s = deadline.trim();
+            if (s.length() == 10) {
+                deadlineDt = java.time.LocalDate.parse(s).atTime(23, 59, 59);
+            } else {
+                deadlineDt = LocalDateTime.parse(s);
+            }
+        }
         List<CriterionInput> criteria = mergeCriteriaInputs(criterionNames, criterionWeights, criterionDescriptions);
 
         Campaign campaign = campaignService.createCycle(
                 organizer, title, description,
                 CampaignMode.valueOf(mode),
                 AnonymityMode.valueOf(anonymity),
-                scaleMax, expectedDurationDays, deadlineDt, criteria);
+                scaleMax, null, deadlineDt, criteria);
 
         if (files != null) {
             for (MultipartFile f : files) {
                 if (f == null || f.isEmpty()) continue;
-                List<MultipartFile> single = List.of(f);
-                workService.submitWork(campaign.getId(),
-                        organizer.getUsername(),
-                        stripExtension(f.getOriginalFilename()),
-                        null, null, single);
+                campaignService.addFileMaterial(campaign.getId(), f);
             }
         }
         if (links != null) {
             for (String link : links) {
                 if (link == null || link.isBlank()) continue;
-                workService.submitWork(campaign.getId(),
-                        organizer.getUsername(),
-                        link, null, link, null);
+                campaignService.addLinkMaterial(campaign.getId(), link.trim());
             }
         }
 
@@ -127,6 +128,7 @@ public class OrganizerController {
         model.addAttribute("campaign", campaign);
         model.addAttribute("criteria", criteria);
         model.addAttribute("works", works);
+        model.addAttribute("materials", campaignService.getMaterials(id));
         return "organizer/cycle_view";
     }
 

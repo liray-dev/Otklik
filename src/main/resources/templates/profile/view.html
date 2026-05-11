@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{components/head :: head('Профиль пользователя')}"></head>
+<body>
+<div class="app">
+    <header th:replace="~{components/topbar :: bar(~{::nav}, null)}">
+        <nav class="topbar__nav">
+            <a class="is-active">Профиль</a>
+        </nav>
+    </header>
+
+    <aside th:replace="~{components/sidebar :: bar(
+        ${ { {'key':'profile','label':'Профиль','href':'/profile','icon':'◉'} } },
+        'profile',
+        'Otklik',
+        'ЛИЧНЫЙ КАБИНЕТ')}"></aside>
+
+    <main class="app__main">
+        <div class="page__hero">
+            <div>
+                <h1 class="page__title" th:text="${user.fullName != null ? user.fullName : user.username}">Имя</h1>
+                <p class="page__subtitle" th:text="${user.role}">Роль</p>
+            </div>
+        </div>
+
+        <div class="grid grid--main">
+            <div class="card">
+                <div class="card__label mb-3">Общая информация</div>
+                <div class="grid grid--2">
+                    <div class="profile-field">
+                        <span class="profile-field__label">ФИО</span>
+                        <span class="profile-field__value" th:text="${user.fullName != null ? user.fullName : '—'}">—</span>
+                    </div>
+                    <div class="profile-field" th:if="${isStudent}">
+                        <span class="profile-field__label">Университетская группа</span>
+                        <span class="profile-field__value" th:text="${user.universityGroup != null ? user.universityGroup : '—'}">—</span>
+                    </div>
+                    <div class="profile-field">
+                        <span class="profile-field__label">Номер телефона</span>
+                        <span class="profile-field__value" th:text="${user.phone != null ? user.phone : '—'}">—</span>
+                    </div>
+                    <div class="profile-field">
+                        <span class="profile-field__label">Telegram</span>
+                        <span class="profile-field__value">
+                            <a th:if="${user.telegram != null}" th:href="${user.telegram}" target="_blank" th:text="${user.telegram}"></a>
+                            <span th:if="${user.telegram == null}">—</span>
+                        </span>
+                    </div>
+                </div>
+                <div class="profile-field mt-3" th:if="${user.aboutMe != null and !#strings.isEmpty(user.aboutMe)}">
+                    <span class="profile-field__label">Обо мне</span>
+                    <span class="profile-field__value" th:text="${user.aboutMe}"></span>
+                </div>
+            </div>
+
+            <div class="card" style="text-align:center;">
+                <div class="card__label mb-3">Фото</div>
+                <div th:if="${user.avatarPath != null}"
+                     class="avatar avatar--xl"
+                     style="margin:0 auto;"
+                     th:style="'margin:0 auto;background-image:url(/profile/' + ${user.id} + '/avatar);background-size:cover;background-position:center;'"></div>
+                <div th:if="${user.avatarPath == null}" class="avatar avatar--xl" style="margin:0 auto;"
+                     th:text="${user.fullName != null and !#strings.isEmpty(user.fullName) ? #strings.substring(user.fullName, 0, 1).toUpperCase() : #strings.substring(user.username, 0, 1).toUpperCase()}">U</div>
+                <div class="muted small mt-3" th:text="'@' + ${user.username}">@user</div>
+            </div>
+        </div>
+    </main>
+
+    <footer th:replace="~{components/footer :: bar}"></footer>
+</div>
+</body>
+</html>

@@ -24,15 +24,19 @@
         <div th:if="${param.saved}" class="alert alert--ok">Черновик сохранён.</div>
 
         <div class="page__hero">
-            <div class="row gap-3">
-                <span style="font-size:18px;font-weight:600;">Работа:</span>
-                <span style="font-size:18px;font-weight:600;" th:text="${work.title}">Название</span>
-                <span th:if="${work.status == 'UNDER_REVIEW'}" class="badge badge--inprogress">В процессе</span>
-                <span th:if="${work.status == 'REVIEWED'}" class="badge badge--done">Проверено</span>
-            </div>
-            <div class="muted small">
-                Рецензент: <strong sec:authentication="name" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">—</strong>
-                <span class="dot" style="margin-left:8px"></span>
+            <div>
+                <div class="row gap-3">
+                    <span style="font-size:18px;font-weight:600;">Работа:</span>
+                    <span style="font-size:18px;font-weight:600;" th:text="${work.title}">Название</span>
+                    <span th:if="${work.status == 'UNDER_REVIEW'}" class="badge badge--inprogress">В процессе</span>
+                    <span th:if="${work.status == 'REVIEWED'}" class="badge badge--done">Проверено</span>
+                </div>
+                <div class="muted small mt-2" th:with="anon=${assignment.work.campaign.anonymityMode.name()}">
+                    Автор:
+                    <a th:if="${anon == 'OPEN'}" th:href="@{/profile/{id}(id=${assignment.work.student.id})}"
+                       th:text="${assignment.work.student.fullName != null ? assignment.work.student.fullName : assignment.work.student.username}">Автор</a>
+                    <span th:if="${anon != 'OPEN'}" th:text="${work.authorLabel}">скрыт</span>
+                </div>
             </div>
         </div>
 
@@ -120,7 +124,6 @@
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
                             Отправить финальную рецензию
                         </button>
-                        <button type="button" class="btn btn--ghost btn--lg">⋯</button>
                     </div>
                 </div>
             </div>
@@ -128,6 +131,20 @@
 
         <form id="link-form" th:action="@{/expert/review/{id}/link(id=${assignment.id})}" method="post" class="hidden">
             <input name="url" type="url" class="input" placeholder="https://...">
+        </form>
+
+        <form th:action="@{/expert/review/{id}/revision(id=${assignment.id})}" method="post" class="mt-3"
+              onsubmit="return confirm('Отправить работу студенту на доработку? Текущий черновик отзыва сохранится как комментарий.')">
+            <div class="card" style="border-left:3px solid var(--warning);">
+                <div class="row row--between">
+                    <div>
+                        <div class="card__title">Отправить на доработку</div>
+                        <div class="muted small mt-2">Работа вернётся студенту со статусом «Нужны правки». Студент получит уведомление и сможет дозагрузить файлы.</div>
+                    </div>
+                    <button type="submit" class="btn btn--warn">↩ На доработку</button>
+                </div>
+                <textarea name="comment" class="textarea mt-3" rows="2" placeholder="Что нужно поправить? (опционально, сохранится как отзыв)"></textarea>
+            </div>
         </form>
     </main>
 

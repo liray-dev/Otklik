@@ -8,13 +8,15 @@
             <a th:href="@{/admin}">Обзор</a>
             <a th:href="@{/admin/users}" class="is-active">Пользователи</a>
             <a th:href="@{/admin/invites}">Инвайты</a>
+            <a th:href="@{/admin/settings}">Настройки</a>
         </nav>
     </header>
 
     <aside th:replace="~{components/sidebar :: bar(
         ${ { {'key':'overview','label':'Обзор','href':'/admin','icon':'▦'},
               {'key':'users','label':'Пользователи','href':'/admin/users','icon':'▤'},
-              {'key':'invites','label':'Инвайты','href':'/admin/invites','icon':'✎'} } },
+              {'key':'invites','label':'Инвайты','href':'/admin/invites','icon':'✎'},
+              {'key':'settings','label':'Настройки','href':'/admin/settings','icon':'⚙'} } },
         'users',
         'Otklik',
         'АДМИНИСТРИРОВАНИЕ')}"></aside>
@@ -32,20 +34,34 @@
                 <thead>
                 <tr>
                     <th>Имя</th>
+                    <th>ФИО</th>
                     <th>Email</th>
                     <th>Роль</th>
                     <th>Дата регистрации</th>
+                    <th></th>
                 </tr>
                 </thead>
                 <tbody>
                 <tr th:each="u : ${users}">
                     <td><strong th:text="${u.username}"></strong></td>
+                    <td class="small" th:text="${u.fullName != null ? u.fullName : '—'}"></td>
                     <td class="muted small" th:text="${u.email != null ? u.email : '—'}"></td>
                     <td><span class="tag" th:text="${u.role}"></span></td>
                     <td class="muted small" th:text="${#temporals.format(u.createdAt, 'dd.MM.yyyy HH:mm')}"></td>
+                    <td class="text-right">
+                        <div class="row gap-2" style="justify-content:flex-end;">
+                            <a th:href="@{/profile/{id}(id=${u.id})}" class="btn btn--ghost btn--sm">Профиль</a>
+                            <form th:action="@{/admin/users/{id}/delete(id=${u.id})}" method="post"
+                                  onsubmit="return confirm('Удалить пользователя ' + this.dataset.name + ' вместе со всеми его работами и рецензиями?')"
+                                  th:attr="data-name=${u.username}">
+                                <button type="submit" class="btn btn--danger btn--sm"
+                                        th:disabled="${u.username == #authentication.name}">Удалить</button>
+                            </form>
+                        </div>
+                    </td>
                 </tr>
                 <tr th:if="${#lists.isEmpty(users)}">
-                    <td colspan="4" class="muted" style="text-align:center;padding:24px;">Пользователей нет.</td>
+                    <td colspan="6" class="muted" style="text-align:center;padding:24px;">Пользователей нет.</td>
                 </tr>
                 </tbody>
             </table>

@@ -8,13 +8,15 @@
             <a th:href="@{/admin}" class="is-active">Обзор</a>
             <a th:href="@{/admin/users}">Пользователи</a>
             <a th:href="@{/admin/invites}">Инвайты</a>
+            <a th:href="@{/admin/settings}">Настройки</a>
         </nav>
     </header>
 
     <aside th:replace="~{components/sidebar :: bar(
         ${ { {'key':'overview','label':'Обзор','href':'/admin','icon':'▦'},
               {'key':'users','label':'Пользователи','href':'/admin/users','icon':'▤'},
-              {'key':'invites','label':'Инвайты','href':'/admin/invites','icon':'✎'} } },
+              {'key':'invites','label':'Инвайты','href':'/admin/invites','icon':'✎'},
+              {'key':'settings','label':'Настройки','href':'/admin/settings','icon':'⚙'} } },
         'overview',
         'Otklik',
         'АДМИНИСТРИРОВАНИЕ')}"></aside>

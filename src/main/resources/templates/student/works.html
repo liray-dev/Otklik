@@ -12,10 +12,11 @@
 
     <aside th:replace="~{components/sidebar :: bar(
         ${ { {'key':'works','label':'Мои работы','href':'/student/works','icon':'▦'},
-              {'key':'cycles','label':'Доступные кампании','href':'/student/cycles','icon':'▤'} } },
+              {'key':'cycles','label':'Доступные кампании','href':'/student/cycles','icon':'▤'},
+              {'key':'profile','label':'Профиль','href':'/profile','icon':'◉'} } },
         'works',
         'Otklik',
-        'СИСТЕМА ПРОВЕРКИ')}"></aside>
+        'ЛИЧНЫЙ КАБИНЕТ')}"></aside>
 
     <main class="app__main">
         <div th:if="${param.submitted}" class="alert alert--ok">Работа отправлена.</div>
@@ -58,8 +59,11 @@
                     <strong class="small" th:text="'Рецензий: ' + ${row.reviewsDone} + ' / ' + ${row.assignmentsTotal}"></strong>
                     <div th:each="rr : ${row.reviews}" class="mt-3" th:with="r=${rr.review},a=${rr.assignment},scores=${rr.scores}"
                          style="padding:14px;border:1px solid var(--border-soft);border-radius:8px;background:var(--paper);">
-                        <div class="row row--between mb-3">
-                            <span><strong th:text="${a.reviewer.username}">Рецензент</strong></span>
+                        <div class="row row--between mb-3" th:with="anon=${w.campaign.anonymityMode.name()}">
+                            <span>
+                                <a th:if="${anon == 'OPEN'}" th:href="@{/profile/{id}(id=${a.reviewer.id})}"><strong th:text="${a.reviewer.fullName != null ? a.reviewer.fullName : a.reviewer.username}">Рецензент</strong></a>
+                                <strong th:if="${anon != 'OPEN'}" th:text="'Рецензент #' + ${#strings.substring(#strings.replace(a.reviewer.id.toString(), '-', ''), 0, 6).toUpperCase()}">Рецензент</strong>
+                            </span>
                             <span th:if="${r.totalScore != null}" class="metric__value" style="font-size:22px;line-height:1;">
                                 <span th:text="${r.totalScore}">0</span><span class="muted" style="font-size:13px;" th:text="' / ' + ${row.scaleMax}"></span>
                             </span>

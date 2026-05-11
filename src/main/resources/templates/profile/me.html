@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{components/head :: head('Профиль')}"></head>
+<body>
+<div class="app">
+    <header th:replace="~{components/topbar :: bar(~{::nav}, null)}">
+        <nav class="topbar__nav">
+            <a th:href="@{/profile}" class="is-active">Профиль</a>
+        </nav>
+    </header>
+
+    <aside th:replace="~{components/sidebar :: bar(
+        ${ { {'key':'profile','label':'Профиль','href':'/profile','icon':'◉'} } },
+        'profile',
+        'Otklik',
+        'ЛИЧНЫЙ КАБИНЕТ')}"></aside>
+
+    <main class="app__main">
+        <div class="page__hero">
+            <div>
+                <h1 class="page__title">Профиль</h1>
+                <p class="page__subtitle">Личная информация. Видна другим участникам при рецензировании.</p>
+            </div>
+        </div>
+
+        <div th:if="${param.saved}" class="alert alert--ok">Изменения сохранены.</div>
+        <div th:if="${param.incomplete}" class="alert alert--warn">
+            Заполните <strong>ФИО</strong><span th:if="${isStudent}"> и <strong>университетскую группу</strong></span>, чтобы продолжить работу с сервисом.
+        </div>
+
+        <div class="grid grid--main">
+            <div class="stack">
+                <div class="card">
+                    <div class="card__head">
+                        <div class="card__label">Общая информация</div>
+                    </div>
+                    <form th:action="@{/profile}" method="post" class="stack">
+                        <div class="grid grid--2">
+                            <div class="profile-field">
+                                <label class="profile-field__label" for="fullName">ФИО <span style="color:var(--danger);">*</span></label>
+                                <input id="fullName" name="fullName" type="text" class="input" th:value="${user.fullName}" placeholder="Иванов Иван Иванович" required>
+                            </div>
+                            <div class="profile-field" th:if="${isStudent}">
+                                <label class="profile-field__label" for="universityGroup">Университетская группа <span style="color:var(--danger);">*</span></label>
+                                <input id="universityGroup" name="universityGroup" type="text" class="input" th:value="${user.universityGroup}" placeholder="РИ-150926" required>
+                            </div>
+                            <div class="profile-field">
+                                <label class="profile-field__label" for="phone">Номер телефона</label>
+                                <input id="phone" name="phone" type="tel" class="input" th:value="${user.phone}" placeholder="+7 (___) ___-__-__">
+                            </div>
+                            <div class="profile-field">
+                                <label class="profile-field__label" for="telegram">Telegram</label>
+                                <input id="telegram" name="telegram" type="text" class="input" th:value="${user.telegram}" placeholder="https://t.me/username">
+                            </div>
+                        </div>
+                        <div class="profile-field">
+                            <label class="profile-field__label" for="aboutMe">Обо мне</label>
+                            <textarea id="aboutMe" name="aboutMe" class="textarea" rows="4" placeholder="Кратко расскажите о себе" th:text="${user.aboutMe}"></textarea>
+                        </div>
+                        <div>
+                            <button type="submit" class="btn btn--primary">Сохранить</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="stack">
+                <div class="card">
+                    <div class="card__label mb-3">Фото / Аватар</div>
+                    <div style="display:flex;flex-direction:column;align-items:center;gap:16px;">
+                        <div th:if="${user.avatarPath != null}"
+                             class="avatar avatar--xl"
+                             th:style="'background-image:url(/profile/' + ${user.id} + '/avatar);background-size:cover;background-position:center;'"></div>
+                        <div th:if="${user.avatarPath == null}" class="avatar avatar--xl"
+                             th:text="${user.fullName != null and !#strings.isEmpty(user.fullName) ? #strings.substring(user.fullName, 0, 1).toUpperCase() : #strings.substring(user.username, 0, 1).toUpperCase()}">U</div>
+
+                        <form th:action="@{/profile/avatar}" method="post" enctype="multipart/form-data" id="avatar-form" style="width:100%;">
+                            <label class="btn btn--ghost btn--block" style="cursor:pointer;text-align:center;">
+                                <input type="file" name="avatar" accept="image/*" style="display:none;" onchange="document.getElementById('avatar-form').submit()">
+                                Загрузить аватар
+                            </label>
+                        </form>
+                        <form th:if="${user.avatarPath != null}" th:action="@{/profile/avatar/delete}" method="post" style="width:100%;">
+                            <button type="submit" class="btn btn--ghost btn--block">Удалить</button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card__label mb-2">Логин и роль</div>
+                    <div class="profile-field mb-2">
+                        <span class="profile-field__label">Username</span>
+                        <span class="profile-field__value" th:text="${user.username}">user</span>
+                    </div>
+                    <div class="profile-field">
+                        <span class="profile-field__label">Роль</span>
+                        <span class="profile-field__value" th:text="${user.role}">ROLE</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer th:replace="~{components/footer :: bar}"></footer>
+</div>
+</body>
+</html>

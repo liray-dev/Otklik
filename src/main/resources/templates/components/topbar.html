@@ -10,16 +10,17 @@
     <th:block th:insert="${nav}"></th:block>
     <div class="topbar__spacer"></div>
     <div class="topbar__actions">
-        <button type="button" class="icon-btn" aria-label="Уведомления">
+        <a th:href="@{/notifications}" class="icon-btn icon-btn--bell" aria-label="Уведомления">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-        </button>
-        <button type="button" class="icon-btn" aria-label="Помощь">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-        </button>
-        <div class="user-chip" sec:authorize="isAuthenticated()">
-            <span class="avatar" th:text="${#strings.substring(#authentication.name, 0, 1).toUpperCase()}">U</span>
-            <span class="user-chip__name" sec:authentication="name">User</span>
-        </div>
+            <span class="bell-dot" th:if="${unreadCount != null and unreadCount > 0}" th:text="${unreadCount}">0</span>
+        </a>
+        <a th:href="@{/profile}" class="user-chip" sec:authorize="isAuthenticated()">
+            <span class="avatar" th:if="${currentUser != null and currentUser.avatarPath != null}"
+                  th:style="'background-image:url(/profile/' + ${currentUser.id} + '/avatar);background-size:cover;background-position:center;'"></span>
+            <span class="avatar" th:if="${currentUser == null or currentUser.avatarPath == null}"
+                  th:text="${#strings.substring(#authentication.name, 0, 1).toUpperCase()}">U</span>
+            <span class="user-chip__name" th:text="${currentUser != null and currentUser.fullName != null ? currentUser.fullName : #authentication.name}">User</span>
+        </a>
     </div>
 </header>
 

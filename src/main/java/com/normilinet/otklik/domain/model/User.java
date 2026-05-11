@@ -34,4 +34,22 @@ public class User extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "invite_id")
     private Invite invite;
+
+    @Column(name = "full_name", length = 200)
+    private String fullName;
+
+    @Column(length = 50)
+    private String phone;
+
+    @Column(length = 200)
+    private String telegram;
+
+    @Column(name = "avatar_path", length = 500)
+    private String avatarPath;
+
+    @Column(name = "about_me", columnDefinition = "TEXT")
+    private String aboutMe;
+
+    @Column(name = "university_group", length = 100)
+    private String universityGroup;
 }

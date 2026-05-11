@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{components/head :: head('Уведомления')}"></head>
+<body>
+<div class="app">
+    <header th:replace="~{components/topbar :: bar(~{::nav}, null)}">
+        <nav class="topbar__nav">
+            <a th:href="@{/notifications}" class="is-active">Уведомления</a>
+        </nav>
+    </header>
+
+    <aside th:replace="~{components/sidebar :: bar(
+        ${ { {'key':'notifications','label':'Уведомления','href':'/notifications','icon':'🔔'} } },
+        'notifications',
+        'Otklik',
+        'СИСТЕМА ПРОВЕРКИ')}"></aside>
+
+    <main class="app__main">
+        <div class="page__hero">
+            <div>
+                <h1 class="page__title">Уведомления</h1>
+                <p class="page__subtitle">Все системные события по вашим работам и рецензиям.</p>
+            </div>
+            <form th:action="@{/notifications/read-all}" method="post">
+                <button type="submit" class="btn btn--ghost">Отметить всё как прочитанное</button>
+            </form>
+        </div>
+
+        <div class="stack">
+            <div th:each="n : ${notifications}"
+                 th:classappend="${n.read} ? 'notif-item' : 'notif-item notif-item--unread'"
+                 class="notif-item">
+                <span class="notif-item__dot" th:classappend="${n.read} ? 'notif-item__dot--read'"></span>
+                <div style="flex:1;">
+                    <div class="row row--between mb-2">
+                        <span class="card__label" th:text="${n.type}">TYPE</span>
+                        <span class="muted small" th:text="${#temporals.format(n.createdAt, 'dd.MM.yyyy HH:mm')}"></span>
+                    </div>
+                    <div th:text="${n.message}">Текст</div>
+                    <div class="mt-2 row gap-3" th:if="${n.link != null or !n.read}">
+                        <a th:if="${n.link != null}" th:href="${n.link}" class="btn btn--primary btn--sm">Открыть</a>
+                        <form th:if="${!n.read}" th:action="@{/notifications/{id}/read(id=${n.id})}" method="post">
+                            <button type="submit" class="btn btn--ghost btn--sm">Отметить прочитанным</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div th:if="${#lists.isEmpty(notifications)}" class="card" style="text-align:center;padding:40px;">
+                <div class="muted">Пока уведомлений нет.</div>
+            </div>
+        </div>
+    </main>
+
+    <footer th:replace="~{components/footer :: bar}"></footer>
+</div>
+</body>
+</html>

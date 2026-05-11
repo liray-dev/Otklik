@@ -41,6 +41,14 @@ public class WorkService {
         User student = userRepository.findByUsername(username)
                 .orElseThrow(() -> new IllegalArgumentException("Студент не найден"));
 
+        java.util.Optional<Work> existing = workRepository.findByCampaignIdAndStudentId(campaignId, student.getId());
+        if (existing.isPresent()) {
+            return updateWork(existing.get().getId(), username, title, contentText, externalLink, files);
+        }
+        if (campaign.getDeadline() != null && java.time.LocalDateTime.now().isAfter(campaign.getDeadline())) {
+            throw new IllegalStateException("Срок отправки работ истёк");
+        }
+
         Work work = new Work();
         work.setCampaign(campaign);
         work.setStudent(student);
@@ -60,6 +68,74 @@ public class WorkService {
             }
         }
         return work;
+    }
+
+    @Transactional
+    public Work updateWork(UUID workId,
+                           String username,
+                           String title,
+                           String contentText,
+                           String externalLink,
+                           List<MultipartFile> files) throws IOException {
+        Work work = workRepository.findById(workId)
+                .orElseThrow(() -> new IllegalArgumentException("Работа не найдена"));
+        if (!work.getStudent().getUsername().equals(username)) {
+            throw new SecurityException("Не ваша работа");
+        }
+        if (!isEditable(work)) {
+            throw new IllegalStateException("Работа уже взята в проверку и не может быть изменена");
+        }
+        if (title != null && !title.isBlank()) work.setTitle(title);
+        work.setContentText(contentText);
+        if (externalLink != null && !externalLink.isBlank()) work.setExternalLink(externalLink);
+        if (work.getStatus() == WorkStatus.NEEDS_REVISION) {
+            WorkStatus next = work.getCampaign().getStatus() == CampaignStatus.ACTIVE
+                    ? WorkStatus.IN_QUEUE
+                    : WorkStatus.UPLOADED;
+            work.setStatus(next);
+        }
+        work = workRepository.save(work);
+        if (files != null) {
+            for (MultipartFile file : files) {
+                if (file == null || file.isEmpty()) continue;
+                attachFile(work, file);
+            }
+        }
+        return work;
+    }
+
+    @Transactional
+    public void deleteAttachment(UUID workId, UUID attachmentId, String username) throws IOException {
+        Work work = workRepository.findById(workId)
+                .orElseThrow(() -> new IllegalArgumentException("Работа не найдена"));
+        if (!work.getStudent().getUsername().equals(username)) {
+            throw new SecurityException("Не ваша работа");
+        }
+        if (!isEditable(work)) {
+            throw new IllegalStateException("Работа уже взята в проверку");
+        }
+        WorkAttachment att = attachmentRepository.findById(attachmentId)
+                .orElseThrow(() -> new IllegalArgumentException("Файл не найден"));
+        if (!att.getWork().getId().equals(work.getId())) {
+            throw new SecurityException("Файл не относится к этой работе");
+        }
+        if (att.getStoredPath() != null) {
+            try { storage.delete(att.getStoredPath()); } catch (Exception ignored) {}
+        }
+        attachmentRepository.delete(att);
+    }
+
+    public boolean isEditable(Work work) {
+        WorkStatus s = work.getStatus();
+        if (s == WorkStatus.UNDER_REVIEW || s == WorkStatus.REVIEWED) return false;
+        return true;
+    }
+
+    @Transactional(readOnly = true)
+    public java.util.Optional<Work> findExistingForStudent(UUID campaignId, String username) {
+        User student = userRepository.findByUsername(username)
+                .orElseThrow(() -> new IllegalArgumentException("Студент не найден"));
+        return workRepository.findByCampaignIdAndStudentId(campaignId, student.getId());
     }
 
     @Transactional
