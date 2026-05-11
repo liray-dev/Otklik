@@ -12,8 +12,12 @@ public class HomeController {
     @GetMapping("/")
     public String index(@AuthenticationPrincipal CustomUserDetails userDetails, Model model) {
         if (userDetails != null) {
+            String role = userDetails.getAuthorities().iterator().next().getAuthority();
+            if ("ADMIN".equals(role)) return "redirect:/admin";
+            if ("STUDENT".equals(role)) return "redirect:/student/campaigns";
+            if ("EXPERT".equals(role)) return "redirect:/expert/reviews";
             model.addAttribute("username", userDetails.getUsername());
-            model.addAttribute("role", userDetails.getAuthorities().iterator().next().getAuthority());
+            model.addAttribute("role", role);
         }
         return "home";
     }

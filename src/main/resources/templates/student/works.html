@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/student :: head('Мои работы')}"></head>
+<body>
+<div class="admin-layout">
+    <div th:replace="~{layout/student :: sidebar}"></div>
+    <main class="main-content">
+        <div class="topbar">
+            <h1 class="page-title">Мои работы</h1>
+        </div>
+        <div class="card">
+            <h3>Отвеченные работы</h2>
+            <table class="table mt-4">
+                <thead>
+                    <tr>
+                        <th>Кампания</th>
+                        <th>Статус проверки</th>
+                        <th>Комментарий / Текст</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="w : ${works}">
+                        <td style="font-weight:500;" th:text="${w.campaign.title}">Кампания</td>
+                        <td>
+                            <span th:class="'badge badge-' + ${w.status}" th:text="${w.status}"></span>
+                        </td>
+                        <td>
+                            <div style="max-height: 50px; overflow: hidden; text-overflow: ellipsis; font-size: 0.9rem;" th:text="${w.contentText}"></div>
+                        </td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(works)}">
+                        <td colspan="3" style="text-align:center;" class="text-muted">Вы еще не отправляли ни одной работы.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+</div>
+</body>
+</html>

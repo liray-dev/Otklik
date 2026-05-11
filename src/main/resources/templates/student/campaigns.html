@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/student :: head('Доступные кампании')}"></head>
+<body>
+<div class="admin-layout">
+    <div th:replace="~{layout/student :: sidebar}"></div>
+    <main class="main-content">
+        <div class="topbar">
+            <h1 class="page-title">Доступные кампании</h1>
+        </div>
+        <div class="card">
+            <h3>Активные задания</h2>
+            <p class="text-muted mt-2 mb-4">Здесь вы можете выбрать кампанию и отправить свою работу на проверку.</p>
+            
+            <table class="table mt-4">
+                <thead>
+                    <tr>
+                        <th>Название</th>
+                        <th>Описание</th>
+                        <th>Дедлайн</th>
+                        <th>Действие</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="c : ${campaigns}">
+                        <td style="font-weight:500;" th:text="${c.title}">Название</td>
+                        <td th:text="${c.description}">Описание</td>
+                        <td th:text="${c.deadline != null ? #temporals.format(c.deadline, 'dd.MM.yyyy HH:mm') : 'Без ограничений'}"></td>
+                        <td>
+                            <a th:href="@{/student/campaigns/{id}/submit(id=${c.id})}" class="btn btn-sm">Отправить работу</a>
+                        </td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(campaigns)}">
+                        <td colspan="4" style="text-align:center;" class="text-muted">В данный момент активных кампаний нет.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+</div>
+</body>
+</html>

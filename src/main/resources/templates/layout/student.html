@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head th:fragment="head(title)">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${title} + ' - Otklik'">Otklik</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <link rel="stylesheet" th:href="@{/css/admin.css}">
+</head>
+<body>
+    <aside class="sidebar" th:fragment="sidebar">
+        <div class="sidebar-logo">Otklik <span style="font-size:0.8rem; font-weight:normal; color:#ccc;">Student</span></div>
+        <nav>
+            <a th:href="@{/student/campaigns}" class="nav-link">Доступные кампании</a>
+            <a th:href="@{/student/works}" class="nav-link">Мои работы</a>
+            
+            <form th:action="@{/logout}" method="post" style="margin-top: 40px;">
+                <button type="submit" class="btn btn-sm" style="background:var(--error-color)">Выход</button>
+            </form>
+        </nav>
+    </aside>
+</body>
+</html>

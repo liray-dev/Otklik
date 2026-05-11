@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/admin :: head('Управление кампанией')}"></head>
+<body>
+<div class="admin-layout">
+    <div th:replace="~{layout/admin :: sidebar}"></div>
+    <main class="main-content">
+        <div class="topbar">
+            <div>
+                <a th:href="@{/admin/campaigns}" class="text-muted" style="font-size:0.9rem;">&larr; Назад к кампаниям</a>
+                <h1 class="page-title mt-2" th:text="${campaign.title}">Кампания</h1>
+            </div>
+            <div>
+                <span th:class="'badge badge-' + ${campaign.status}" th:text="${campaign.status}">DRAFT</span>
+            </div>
+        </div>
+        
+        <div class="grid-2">
+            <div class="card">
+                <h3>Информация</h3>
+                <p class="mt-2 text-muted" th:text="${campaign.description}"></p>
+                
+                <div style="margin-top:20px;">
+                    <strong>Режим:</strong> <span th:text="${campaign.mode}"></span><br/>
+                    <strong>Дедлайн:</strong> <span th:text="${campaign.deadline != null ? #temporals.format(campaign.deadline, 'dd.MM.yyyy HH:mm') : '-'}"></span>
+                </div>
+                
+                <div class="mt-4" th:if="${campaign.status.name() == 'DRAFT'}">
+                    <form th:action="@{/admin/campaigns/{id}/start(id=${campaign.id})}" method="post">
+                        <button type="submit" class="btn" style="background:var(--success-color)">Запустить кампанию</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Критерии оценки</h3>
+                <table class="table mt-2">
+                    <thead>
+                        <tr>
+                            <th>Название</th>
+                            <th>Макс. балл</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="crit : ${criteria}">
+                            <td>
+                                <div style="font-weight:500;" th:text="${crit.name}"></div>
+                                <div style="font-size:0.8rem; color:var(--text-muted);" th:text="${crit.description}"></div>
+                            </td>
+                            <td th:text="${crit.maxScore}"></td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(criteria)}">
+                            <td colspan="2" style="text-align:center;" class="text-muted">Нет критериев</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <hr style="border:0; border-top:1px solid var(--border-color); margin:20px 0;"/>
+                <h4>Добавить критерий</h4>
+                <form th:action="@{/admin/campaigns/{id}/criteria(id=${campaign.id})}" method="post" class="mt-2">
+                    <div class="form-group">
+                        <label class="form-label">Название</label>
+                        <input type="text" name="name" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Пояснение (опционально)</label>
+                        <input type="text" name="description" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Максимальный балл</label>
+                        <input type="number" name="maxScore" class="form-control" min="1" max="100" value="10" required>
+                    </div>
+                    <button type="submit" class="btn btn-sm">Добавить критерий</button>
+                </form>
+            </div>
+        </div>
+    </main>
+</div>
+</body>
+</html>

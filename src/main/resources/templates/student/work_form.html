@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/student :: head('Отправка работы')}"></head>
+<body>
+<div class="admin-layout">
+    <div th:replace="~{layout/student :: sidebar}"></div>
+    <main class="main-content">
+        <div class="topbar">
+            <div>
+                <a th:href="@{/student/campaigns}" class="text-muted" style="font-size:0.9rem;">&larr; Назад</a>
+                <h1 class="page-title mt-2">Отправка работы</h1>
+            </div>
+        </div>
+        <div class="card" style="max-width: 600px;">
+            <h3 th:text="${campaign.title}">Название</h3>
+            <p class="text-muted mt-2" th:text="${campaign.description}"></p>
+            <div class="mt-2 mb-4" style="font-size:0.9rem;">
+                <strong>Дедлайн:</strong> 
+                <span th:text="${campaign.deadline != null ? #temporals.format(campaign.deadline, 'dd.MM.yyyy HH:mm') : 'Без ограничений'}"></span>
+            </div>
+
+            <form th:action="@{/student/campaigns/{id}/submit(id=${campaign.id})}" method="post" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label class="form-label">Ваш ответ (текст, ссылки на GitHub/Google Docs и пр.)</label>
+                    <textarea name="contentText" class="form-control" rows="6" required placeholder="Введите решение или вставьте ссылку..."></textarea>
+                </div>
+                <!-- 
+                <div class="form-group">
+                    <label class="form-label">Прикрепить файл (Опционально)</label>
+                    <input type="file" name="file" class="form-control" style="padding: 9px;">
+                </div> 
+                -->
+                <button type="submit" class="btn mt-4">Отправить работу на проверку</button>
+            </form>
+        </div>
+    </main>
+</div>
+</body>
+</html>

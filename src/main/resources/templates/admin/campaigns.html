@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/admin :: head('Кампании')}"></head>
+<body>
+<div class="admin-layout">
+    <div th:replace="~{layout/admin :: sidebar}"></div>
+    <main class="main-content">
+        <div class="topbar">
+            <h1 class="page-title">Кампании</h1>
+        </div>
+        <div class="grid-2">
+            <div class="card">
+                <h3>Все кампании</h3>
+                <table class="table mt-4">
+                    <thead>
+                        <tr>
+                            <th>Название</th>
+                            <th>Статус</th>
+                            <th>Режим</th>
+                            <th>Дедлайн</th>
+                            <th>Действие</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="c : ${campaigns}">
+                            <td th:text="${c.title}">Название</td>
+                            <td><span th:class="'badge badge-' + ${c.status}" th:text="${c.status}">DRAFT</span></td>
+                            <td th:text="${c.mode}">MANUAL</td>
+                            <td th:text="${c.deadline != null ? #temporals.format(c.deadline, 'dd.MM.yyyy HH:mm') : '-'}">-</td>
+                            <td><a th:href="@{/admin/campaigns/{id}(id=${c.id})}" class="btn btn-sm">Открыть</a></td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(campaigns)}">
+                            <td colspan="5" style="text-align:center;" class="text-muted">Нет кампаний</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="card">
+                <h3>Создать кампанию</h3>
+                <form th:action="@{/admin/campaigns/create}" method="post" class="mt-4">
+                    <div class="form-group">
+                        <label class="form-label">Название</label>
+                        <input type="text" name="title" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Описание</label>
+                        <textarea name="description" class="form-control" rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Режим</label>
+                        <select name="mode" class="form-control" required>
+                            <option value="EXPERT">Экспертный (EXPERT)</option>
+                            <option value="P2P">Студенческий (P2P)</option>
+                            <option value="CONTEST">Конкурсный (CONTEST)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Дедлайн (необязательно)</label>
+                        <input type="datetime-local" name="deadline" class="form-control">
+                    </div>
+                    <button type="submit" class="btn">Создать</button>
+                </form>
+            </div>
+        </div>
+    </main>
+</div>
+</body>
+</html>
