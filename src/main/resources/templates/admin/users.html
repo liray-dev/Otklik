@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{components/head :: head('Пользователи')}"></head>
+<body>
+<div class="app">
+    <header th:replace="~{components/topbar :: bar(~{::nav}, null)}"></header>
+    <nav class="topbar__nav">
+        <a th:href="@{/admin}">Обзор</a>
+        <a th:href="@{/admin/users}" class="is-active">Пользователи</a>
+        <a th:href="@{/admin/invites}">Инвайты</a>
+    </nav>
+
+    <aside th:replace="~{components/sidebar :: bar(
+        ${ { {'key':'overview','label':'Обзор','href':'/admin','icon':'▦'},
+              {'key':'users','label':'Пользователи','href':'/admin/users','icon':'▤'},
+              {'key':'invites','label':'Инвайты','href':'/admin/invites','icon':'✎'} } },
+        'users',
+        'Otklik',
+        'АДМИНИСТРИРОВАНИЕ')}"></aside>
+
+    <main class="app__main">
+        <div class="page__hero">
+            <div>
+                <h1 class="page__title">Пользователи</h1>
+                <p class="page__subtitle">Все зарегистрированные аккаунты.</p>
+            </div>
+        </div>
+
+        <div class="card">
+            <table class="table">
+                <thead>
+                <tr>
+                    <th>Имя</th>
+                    <th>Email</th>
+                    <th>Роль</th>
+                    <th>Дата регистрации</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="u : ${users}">
+                    <td><strong th:text="${u.username}"></strong></td>
+                    <td class="muted small" th:text="${u.email != null ? u.email : '—'}"></td>
+                    <td><span class="tag" th:text="${u.role}"></span></td>
+                    <td class="muted small" th:text="${#temporals.format(u.createdAt, 'dd.MM.yyyy HH:mm')}"></td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(users)}">
+                    <td colspan="4" class="muted" style="text-align:center;padding:24px;">Пользователей нет.</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <footer th:replace="~{components/footer :: bar}"></footer>
+</div>
+</body>
+</html>

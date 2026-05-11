@@ -7,5 +7,6 @@ import java.util.List;
 import java.util.UUID;
 
 public interface EvaluationCriterionRepository extends JpaRepository<EvaluationCriterion, UUID> {
-    List<EvaluationCriterion> findAllByCampaignId(UUID campaignId);
+    List<EvaluationCriterion> findAllByCampaignIdOrderByPositionAsc(UUID campaignId);
+    void deleteAllByCampaignId(UUID campaignId);
 }

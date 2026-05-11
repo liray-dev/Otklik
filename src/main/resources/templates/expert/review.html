@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{components/head :: head('Интерфейс рецензирования')}"></head>
+<body>
+<div class="app">
+    <header th:replace="~{components/topbar :: bar(~{::nav}, 'Поиск оценок...')}"></header>
+    <nav class="topbar__nav">
+        <a th:href="@{/expert/queue}">Проекты</a>
+        <a class="is-active">Интерфейс рецензирования</a>
+        <a th:href="@{/expert/queue}">Аналитика</a>
+    </nav>
+
+    <aside th:replace="~{components/sidebar :: bar(
+        ${ { {'key':'overview','label':'Панель организатора','href':'/organizer','icon':'▦'},
+              {'key':'queue','label':'Очередь проверок','href':'/expert/queue','icon':'▤'},
+              {'key':'review','label':'Интерфейс оценки','href':'/expert/queue','icon':'✎'},
+              {'key':'results','label':'Панель результатов','href':'/expert/queue','icon':'▣'} } },
+        'review',
+        'Otklik',
+        'СИСТЕМА ПРОВЕРКИ')}"></aside>
+
+    <main class="app__main">
+        <div th:if="${param.saved}" class="alert alert--ok">Черновик сохранён.</div>
+
+        <div class="page__hero">
+            <div class="row gap-3">
+                <span style="font-size:18px;font-weight:600;">Работа:</span>
+                <span style="font-size:18px;font-weight:600;" th:text="${work.title}">Название</span>
+                <span th:if="${work.status == 'UNDER_REVIEW'}" class="badge badge--inprogress">В процессе</span>
+                <span th:if="${work.status == 'REVIEWED'}" class="badge badge--done">Проверено</span>
+            </div>
+            <div class="muted small">
+                Рецензент: <strong sec:authentication="name" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">—</strong>
+                <span class="dot" style="margin-left:8px"></span>
+            </div>
+        </div>
+
+        <form id="review-form" th:action="@{/expert/review/{id}/submit(id=${assignment.id})}" method="post">
+            <div class="grid grid--main">
+                <div class="stack">
+                    <div class="viewer">
+                        <div class="viewer__head">
+                            <div class="viewer__filename">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                                <span th:if="${primaryAttachment != null}" th:text="${primaryAttachment.originalFilename}">file</span>
+                                <span th:if="${primaryAttachment == null}" th:text="${work.work.externalLink != null ? work.work.externalLink : 'Документ работы'}">—</span>
+                            </div>
+                            <div class="viewer__actions">
+                                <a th:if="${primaryAttachment != null}" th:href="@{/files/work/{id}(id=${primaryAttachment.id})}" target="_blank" class="icon-btn" title="Открыть в новой вкладке">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                                </a>
+                                <a th:if="${primaryAttachment != null}" th:href="@{/files/work/{id}(id=${primaryAttachment.id},disposition='attachment')}" class="icon-btn" title="Скачать">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                </a>
+                            </div>
+                        </div>
+                        <div class="viewer__body">
+                            <div th:if="${primaryAttachment != null}">
+                                <iframe th:src="@{/files/work/{id}/preview(id=${primaryAttachment.id})}" style="width:100%;height:720px;border:0;"></iframe>
+                            </div>
+                            <div th:if="${primaryAttachment == null and work.work.externalLink != null}">
+                                <p><strong>Ссылка:</strong> <a th:href="${work.work.externalLink}" target="_blank" th:text="${work.work.externalLink}"></a></p>
+                            </div>
+                            <div th:if="${primaryAttachment == null and work.work.externalLink == null and work.work.contentText != null}" th:text="${work.work.contentText}"></div>
+                            <div th:if="${primaryAttachment == null and work.work.externalLink == null and work.work.contentText == null}" class="muted">Работа пустая.</div>
+                        </div>
+                        <div th:if="${workVoice != null}" class="card mt-3">
+                            <div class="card__title mb-3">🎤 Голосовое сообщение к работе</div>
+                            <audio controls th:src="@{/files/work/{id}(id=${workVoice.id})}" style="width:100%;"></audio>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stack">
+                    <div class="card">
+                        <div class="card__title mb-3">📊 Критерии оценки</div>
+                        <div th:each="crit : ${criteria}" class="slider-row" th:with="current=${scoresByCriterion[crit.id]}">
+                            <span class="label" th:text="${crit.name}">Критерий</span>
+                            <span class="value" th:id="'value-' + ${crit.id}" th:text="${current != null ? current : '—'}">—</span>
+                            <input type="hidden" name="criterionId" th:value="${crit.id}">
+                            <input type="range" name="criterionScore"
+                                   min="0" th:max="${scaleMax}" step="0.1"
+                                   th:value="${current != null ? current : 0}"
+                                   th:attr="data-target=${'value-' + crit.id}"
+                                   class="js-criterion-slider">
+                        </div>
+                        <div th:if="${#lists.isEmpty(criteria)}" class="muted">Для этой кампании критерии не настроены.</div>
+                    </div>
+
+                    <div class="card">
+                        <div class="row row--between mb-3">
+                            <div class="card__title row gap-2">💬 Качественная обратная связь</div>
+                            <div class="row gap-2" id="voice-controls" th:attr="data-upload=@{/voice/review/{id}(id=${assignment.id})}">
+                                <span id="voice-status" class="voice-rec hidden">
+                                    <span class="voice-rec__dot"></span>Запись...
+                                </span>
+                                <button type="button" id="voice-start" class="btn-rec">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                                    Запись
+                                </button>
+                                <button type="button" id="voice-stop" class="btn-rec hidden">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12"/></svg>
+                                    Остановить
+                                </button>
+                            </div>
+                        </div>
+                        <div id="voice-preview" th:class="${reviewVoice != null} ? 'mb-3' : 'mb-3 hidden'">
+                            <audio id="voice-audio" controls style="width:100%;" th:src="${reviewVoice != null} ? @{/files/review/{id}(id=${reviewVoice.id})} : null"></audio>
+                        </div>
+                        <textarea name="feedback" class="textarea" rows="6" placeholder="Введите ваши общие комментарии здесь..." th:text="${review.feedback}"></textarea>
+                        <div class="row gap-2 mt-3">
+                            <button type="button" id="attach-link-btn" class="btn btn--ghost btn--sm">📎 Прикрепить ссылки</button>
+                            <button type="submit" formaction="" th:formaction="@{/expert/review/{id}/draft(id=${assignment.id})}" class="btn btn--ghost btn--sm">💾 Сохранить черновик</button>
+                        </div>
+                    </div>
+
+                    <div class="row gap-2">
+                        <button type="submit" class="btn btn--primary btn--lg btn--block" style="flex:1;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                            Отправить финальную рецензию
+                        </button>
+                        <button type="button" class="btn btn--ghost btn--lg">⋯</button>
+                    </div>
+                </div>
+            </div>
+        </form>
+
+        <form id="link-form" th:action="@{/expert/review/{id}/link(id=${assignment.id})}" method="post" class="hidden">
+            <input name="url" type="url" class="input" placeholder="https://...">
+        </form>
+    </main>
+
+    <footer th:replace="~{components/footer :: bar}"></footer>
+</div>
+
+<script th:src="@{/js/slider.js}"></script>
+<script th:src="@{/js/recorder.js}"></script>
+</body>
+</html>

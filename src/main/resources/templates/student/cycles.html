@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{components/head :: head('Доступные кампании')}"></head>
+<body>
+<div class="app">
+    <header th:replace="~{components/topbar :: bar(~{::nav}, null)}"></header>
+    <nav class="topbar__nav">
+        <a th:href="@{/student/works}">Мои работы</a>
+        <a th:href="@{/student/cycles}" class="is-active">Доступные кампании</a>
+    </nav>
+
+    <aside th:replace="~{components/sidebar :: bar(
+        ${ { {'key':'works','label':'Мои работы','href':'/student/works','icon':'▦'},
+              {'key':'cycles','label':'Доступные кампании','href':'/student/cycles','icon':'▤'} } },
+        'cycles',
+        'Otklik',
+        'СИСТЕМА ПРОВЕРКИ')}"></aside>
+
+    <main class="app__main">
+        <div class="page__hero">
+            <div>
+                <h1 class="page__title">Доступные кампании</h1>
+                <p class="page__subtitle">Выберите кампанию и отправьте свою работу на проверку.</p>
+            </div>
+        </div>
+
+        <div class="card">
+            <table class="table">
+                <thead>
+                <tr>
+                    <th>Название</th>
+                    <th>Описание</th>
+                    <th>Режим</th>
+                    <th>Дедлайн</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="c : ${campaigns}">
+                    <td><strong th:text="${c.title}"></strong></td>
+                    <td class="muted small" th:text="${c.description}"></td>
+                    <td><span class="tag" th:text="${c.mode}"></span></td>
+                    <td class="muted small" th:text="${c.deadline != null ? #temporals.format(c.deadline, 'dd.MM.yyyy HH:mm') : 'Без ограничений'}"></td>
+                    <td class="text-right">
+                        <a th:href="@{/student/cycles/{id}/submit(id=${c.id})}" class="btn btn--primary btn--sm">Отправить работу</a>
+                    </td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(campaigns)}">
+                    <td colspan="5" class="muted" style="text-align:center;padding:32px;">Активных кампаний нет.</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <footer th:replace="~{components/footer :: bar}"></footer>
+</div>
+</body>
+</html>

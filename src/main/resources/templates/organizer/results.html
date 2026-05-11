@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{components/head :: head('Панель результатов')}"></head>
+<body>
+<div class="app">
+    <header th:replace="~{components/topbar :: bar(~{::nav}, 'Поиск данных...')}"></header>
+    <nav class="topbar__nav">
+        <a th:href="@{/organizer/cycles/{id}(id=${campaign.id})}">Инфо о проекте</a>
+        <a class="is-active">Аналитика</a>
+        <a th:href="@{/admin/users}">Команда</a>
+    </nav>
+
+    <aside th:replace="~{components/sidebar :: bar(
+        ${ { {'key':'overview','label':'Панель организатора','href':'/organizer','icon':'▦'},
+              {'key':'cycles','label':'Очередь проверок','href':'/organizer/cycles','icon':'▤'},
+              {'key':'review','label':'Интерфейс оценки','href':'/expert/queue','icon':'✎'},
+              {'key':'results','label':'Панель результатов','href':'/organizer/cycles','icon':'▣'} } },
+        'results',
+        'Otklik',
+        'СИСТЕМА ПРОВЕРКИ')}"></aside>
+
+    <main class="app__main">
+        <div class="page__hero">
+            <div>
+                <h1 class="page__title">Панель результатов</h1>
+                <p class="page__subtitle">Комплексный анализ циклов оценки и метрик производительности рецензентов.</p>
+                <div class="muted small mt-2" th:text="${campaign.title}"></div>
+            </div>
+            <div class="row gap-2">
+                <button type="button" class="btn btn--ghost">⚲ Фильтровать</button>
+                <button type="button" class="btn btn--primary">📊 Экспорт в Google Таблицы</button>
+            </div>
+        </div>
+
+        <div class="grid grid--3 mb-4">
+            <div class="card">
+                <div class="card__label">Процент выполнения</div>
+                <div class="metric__value mt-2" th:text="${#numbers.formatDecimal(percentDone, 1, 1)} + '%'">0%</div>
+                <div class="progress mt-3"><i th:style="'width:' + ${percentDone} + '%'"></i></div>
+                <div class="metric__delta is-muted mt-3" th:text="'Осталось ' + ${pendingAssignments} + ' проверок'"></div>
+            </div>
+
+            <div class="card">
+                <div class="card__label">Средний балл</div>
+                <div class="row gap-2 mt-2" style="align-items:baseline;">
+                    <div class="metric__value" th:text="${avgScore}">0</div>
+                    <div class="muted" th:text="'/ ' + ${campaign.scaleMax} + '.0'">/ 10.0</div>
+                </div>
+                <div class="metric__delta mt-3">↗ +0% к прошлому периоду</div>
+            </div>
+
+            <div class="card">
+                <div class="card__label">Распределение баллов</div>
+                <div class="histogram mt-3" th:with="maxV=${#aggregates.max(distribution)}">
+                    <div th:each="bucket, iter : ${distribution}"
+                         th:if="${iter.index > 0}"
+                         class="histogram__bar"
+                         th:classappend="${iter.index == campaign.scaleMax} ? 'is-hl' : (${iter.index >= (campaign.scaleMax - 2)} ? 'is-mid' : 'is-soft')"
+                         th:style="'height:' + ${maxV > 0 ? (bucket * 100 / maxV) : 0} + '%'"></div>
+                </div>
+                <div class="histogram__axis">
+                    <span th:each="i : ${#numbers.sequence(1, campaign.scaleMax)}"
+                          th:if="${i % 2 == 0 or i == 1 or i == campaign.scaleMax}"
+                          th:text="${i} + '.0'"></span>
+                </div>
+                <div class="muted small mt-2 text-right" th:text="'Всего: ' + ${#lists.size(reviews)} + ' отзывов'"></div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="row row--between mb-3">
+                <div class="row gap-2">
+                    <div class="topbar__search" style="width:280px;"><input type="text" placeholder="Поиск по имени или ID..."></div>
+                    <select class="select" style="width:auto;height:36px;">
+                        <option>Тип: Все</option>
+                    </select>
+                    <select class="select" style="width:auto;height:36px;">
+                        <option>Критерий: Все</option>
+                    </select>
+                </div>
+                <span class="muted small" th:text="'Показано ' + ${#lists.size(reviews)} + ' из ' + ${totalAssignments} + ' записей'"></span>
+            </div>
+
+            <table class="table">
+                <thead>
+                <tr>
+                    <th>Имя студента / ID</th>
+                    <th>Рецензент</th>
+                    <th>Статус</th>
+                    <th>Балл</th>
+                    <th>Краткий отзыв</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="r : ${reviews}" th:with="a=${r.assignment}, w=${a.work}, anon=${campaign.anonymityMode.name()}">
+                    <td>
+                        <strong th:if="${anon == 'OPEN'}" th:text="${w.student.username}">студент</strong>
+                        <strong th:if="${anon != 'OPEN'}" th:text="'#' + ${#strings.substring(#strings.replace(w.id.toString(), '-', ''), 0, 6).toUpperCase()}"></strong>
+                        <div class="muted small" th:text="'#STU-' + ${#strings.substring(#strings.replace(w.student.id.toString(), '-', ''), 0, 4).toUpperCase()}"></div>
+                    </td>
+                    <td>
+                        <span th:if="${anon == 'DOUBLE_BLIND'}" class="muted">скрыто</span>
+                        <span th:if="${anon != 'DOUBLE_BLIND'}" th:text="${a.reviewer.username}">рецензент</span>
+                    </td>
+                    <td>
+                        <span th:if="${r.status.name() == 'FINAL'}" class="badge badge--done">Проверено</span>
+                        <span th:if="${r.status.name() != 'FINAL'}" class="badge badge--wait">Ожидает</span>
+                    </td>
+                    <td class="num" th:text="${r.totalScore != null ? r.totalScore : '—'}">—</td>
+                    <td class="muted small" th:text="${r.feedback != null and #strings.length(r.feedback) > 60 ? #strings.substring(r.feedback, 0, 60) + '…' : r.feedback}"></td>
+                    <td><a href="#" class="muted">↗</a></td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(reviews)}">
+                    <td colspan="6" class="muted" style="text-align:center;padding:32px;">Рецензий пока нет.</td>
+                </tr>
+                </tbody>
+            </table>
+
+            <div class="row row--between mt-3">
+                <div class="row gap-2">
+                    <button type="button" class="btn btn--ghost btn--sm">Назад</button>
+                    <button type="button" class="btn btn--ghost btn--sm">Вперед</button>
+                </div>
+                <div class="pagination">
+                    <button type="button" class="is-active">1</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid--2">
+            <div class="card validation-card">
+                <div class="card__title">Официальная валидация</div>
+                <p class="muted mt-2">Все результаты были перепроверены институциональным советом и готовы к внесению в официальные ведомости.</p>
+            </div>
+            <div class="card card--dark help-card">
+                <div class="card__title" style="color:#fff">Системные инсайты</div>
+                <p class="mt-2" style="color:var(--ink-300);font-size:13px;">
+                    Текущий цикл обрабатывается на 12% быстрее, чем в прошлом учебном году.
+                    Выявлено высокое соответствие по критерию «Техническая глубина».
+                </p>
+                <a href="#" class="mt-3" style="color:var(--accent-mid);font-weight:600;display:inline-block;">Читать полный отчёт →</a>
+                <div class="help-card__ghost">📊</div>
+            </div>
+        </div>
+    </main>
+
+    <footer th:replace="~{components/footer :: bar}"></footer>
+</div>
+</body>
+</html>

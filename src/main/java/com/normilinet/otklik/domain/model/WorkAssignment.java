@@ -9,13 +9,16 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "work_assignments")
+@Table(name = "work_assignments", uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"work_id", "reviewer_id"})
+})
 @Getter
 @Setter
 public class WorkAssignment extends BaseEntity {
@@ -28,8 +31,11 @@ public class WorkAssignment extends BaseEntity {
     @JoinColumn(name = "reviewer_id", nullable = false)
     private User reviewer;
 
-    @Column(name = "assigned_at", nullable = false)
-    private LocalDateTime assignedAt;
+    @Column(name = "taken_at")
+    private LocalDateTime takenAt;
+
+    @Column(name = "completed_at")
+    private LocalDateTime completedAt;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 50)

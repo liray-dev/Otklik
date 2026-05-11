@@ -4,7 +4,7 @@ spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/otklik
     username: postgres
-    password: ${DB_PASSWORD}
+    password: ${DB_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
@@ -17,7 +17,26 @@ spring:
   flyway:
     enabled: true
     baseline-on-migrate: true
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 120MB
+      file-size-threshold: 2MB
+  thymeleaf:
+    cache: false
+
+server:
+  port: 8080
+  servlet:
+    session:
+      timeout: 8h
 
 app:
   file-storage:
     upload-dir: ./uploads
+  bootstrap:
+    master-invite:
+      enabled: true
+      code: MASTER-ADMIN-INVITE-777
+      role: ADMIN
+      usages-limit: 10

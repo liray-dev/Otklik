@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{components/head :: head('Отправить работу')}"></head>
+<body>
+<div class="app">
+    <header th:replace="~{components/topbar :: bar(~{::nav}, null)}"></header>
+    <nav class="topbar__nav">
+        <a th:href="@{/student/works}">Мои работы</a>
+        <a th:href="@{/student/cycles}" class="is-active">Доступные кампании</a>
+    </nav>
+
+    <aside th:replace="~{components/sidebar :: bar(
+        ${ { {'key':'works','label':'Мои работы','href':'/student/works','icon':'▦'},
+              {'key':'cycles','label':'Доступные кампании','href':'/student/cycles','icon':'▤'} } },
+        'cycles',
+        'Otklik',
+        'СИСТЕМА ПРОВЕРКИ')}"></aside>
+
+    <main class="app__main">
+        <div class="page__hero">
+            <div>
+                <a th:href="@{/student/cycles}" class="muted small">← Кампании</a>
+                <h1 class="page__title mt-2">Отправить работу</h1>
+                <p class="page__subtitle" th:text="${campaign.title}"></p>
+                <p class="muted small" th:if="${campaign.deadline != null}" th:text="'Дедлайн: ' + ${#temporals.format(campaign.deadline, 'dd.MM.yyyy HH:mm')}"></p>
+            </div>
+        </div>
+
+        <form th:action="@{/student/cycles/{id}/submit(id=${campaign.id})}" method="post" enctype="multipart/form-data" id="cycle-form">
+            <div class="grid grid--main">
+                <div class="stack">
+                    <div class="card">
+                        <label class="field__label" for="title">Название работы</label>
+                        <input id="title" name="title" class="input mt-2" placeholder="напр. Диплом — Анализ устойчивости архитектуры" required>
+
+                        <label class="field__label mt-4" for="contentText">Текст / описание</label>
+                        <textarea id="contentText" name="contentText" class="textarea mt-2" rows="6" placeholder="Опишите вашу работу или вставьте текст ответа..."></textarea>
+
+                        <label class="field__label mt-4" for="externalLink">Ссылка (опционально)</label>
+                        <input id="externalLink" name="externalLink" class="input mt-2" placeholder="https://github.com/... или https://docs.google.com/...">
+                    </div>
+
+                    <div class="card">
+                        <label class="field__label">Файлы работы</label>
+                        <div id="dropzone" class="dropzone mt-2">
+                            <div class="dropzone__icon">📤</div>
+                            <div class="dropzone__main">Перетащите файлы сюда</div>
+                            <div class="dropzone__sub">PDF, DOCX, XLSX, изображения, аудио, видео, ZIP (макс. 100 МБ)</div>
+                            <input id="file-input" name="files" type="file" multiple class="hidden">
+                        </div>
+                        <ul id="file-list" class="stack mt-3" style="gap:8px;"></ul>
+                    </div>
+                </div>
+
+                <div class="stack">
+                    <div class="card">
+                        <div class="card__title mb-3">🎤 Голосовой комментарий (опционально)</div>
+                        <p class="muted small mb-3">Запишите устное пояснение к работе. Будет приложено к работе автоматически после отправки.</p>
+                        <div class="row gap-2" id="voice-controls" data-mode="local">
+                            <button type="button" id="voice-start" class="btn-rec">● Запись</button>
+                            <button type="button" id="voice-stop" class="btn-rec hidden">■ Остановить</button>
+                        </div>
+                        <div id="voice-preview" class="mt-3 hidden">
+                            <audio id="voice-audio" controls style="width:100%;"></audio>
+                        </div>
+                        <input type="hidden" id="voice-blob" name="voiceBase64">
+                    </div>
+
+                    <div class="card card--dark">
+                        <div class="card__title" style="color:#fff">Перед отправкой</div>
+                        <ul class="mt-3" style="color:var(--ink-300);font-size:13px;list-style:none;padding:0;">
+                            <li class="mt-2">— Проверьте название и описание</li>
+                            <li class="mt-2">— Прикрепите все нужные файлы</li>
+                            <li class="mt-2">— Голосовой комментарий — по желанию</li>
+                            <li class="mt-2">— Работу можно отправить только один раз</li>
+                        </ul>
+                        <button type="submit" class="btn btn--primary btn--block btn--lg mt-4">Отправить на проверку</button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </main>
+
+    <footer th:replace="~{components/footer :: bar}"></footer>
+</div>
+
+<script th:src="@{/js/upload.js}"></script>
+<script th:src="@{/js/recorder.js}"></script>
+</body>
+</html>

@@ -1,24 +1,66 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{layout/admin :: head('Дашборд')}"></head>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{components/head :: head('Админка')}"></head>
 <body>
-<div class="admin-layout">
-    <div th:replace="~{layout/admin :: sidebar}"></div>
-    <main class="main-content">
-        <div class="topbar">
-            <h1 class="page-title">Дашборд</h1>
-        </div>
-        <div class="grid-2">
-            <div class="card">
-                <h3>Обзор сервиса</h3>
-                <p class="mt-2 text-muted">Добро пожаловать в панель администратора. Выберите раздел в меню.</p>
+<div class="app">
+    <header th:replace="~{components/topbar :: bar(~{::nav}, null)}"></header>
+    <nav class="topbar__nav">
+        <a th:href="@{/admin}" class="is-active">Обзор</a>
+        <a th:href="@{/admin/users}">Пользователи</a>
+        <a th:href="@{/admin/invites}">Инвайты</a>
+    </nav>
+
+    <aside th:replace="~{components/sidebar :: bar(
+        ${ { {'key':'overview','label':'Обзор','href':'/admin','icon':'▦'},
+              {'key':'users','label':'Пользователи','href':'/admin/users','icon':'▤'},
+              {'key':'invites','label':'Инвайты','href':'/admin/invites','icon':'✎'} } },
+        'overview',
+        'Otklik',
+        'АДМИНИСТРИРОВАНИЕ')}"></aside>
+
+    <main class="app__main">
+        <div class="page__hero">
+            <div>
+                <h1 class="page__title">Админка</h1>
+                <p class="page__subtitle">Пользователи, инвайты и системные настройки.</p>
             </div>
-            <div class="card">
-                <h3>Статистика</h3>
-                <p class="mt-2 text-muted">Скоро здесь будет статистика по кампаниям и пользователям.</p>
+        </div>
+
+        <div class="grid grid--3">
+            <div class="card metric-card metric-card--accent">
+                <div class="metric">
+                    <div>
+                        <div class="card__label">Пользователей</div>
+                        <div class="metric__value" th:text="${usersCount}">0</div>
+                        <div class="metric__delta is-muted">Всего в системе</div>
+                    </div>
+                    <div class="metric__icon">👥</div>
+                </div>
+            </div>
+            <div class="card metric-card">
+                <div class="metric">
+                    <div>
+                        <div class="card__label">Инвайтов</div>
+                        <div class="metric__value" th:text="${invitesCount}">0</div>
+                        <div class="metric__delta is-muted">Всего создано</div>
+                    </div>
+                    <div class="metric__icon">🎟</div>
+                </div>
+            </div>
+            <div class="card metric-card">
+                <div class="metric">
+                    <div>
+                        <div class="card__label">Активных инвайтов</div>
+                        <div class="metric__value" th:text="${activeInvitesCount}">0</div>
+                        <div class="metric__delta is-muted">Можно ещё использовать</div>
+                    </div>
+                    <div class="metric__icon">✓</div>
+                </div>
             </div>
         </div>
     </main>
+
+    <footer th:replace="~{components/footer :: bar}"></footer>
 </div>
 </body>
 </html>

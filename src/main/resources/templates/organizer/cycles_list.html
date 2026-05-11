@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{components/head :: head('Кампании')}"></head>
+<body>
+<div class="app">
+    <header th:replace="~{components/topbar :: bar(~{::nav}, null)}"></header>
+    <nav class="topbar__nav">
+        <a th:href="@{/organizer}">Обзор</a>
+        <a th:href="@{/organizer/cycles}" class="is-active">Кампании</a>
+        <a th:href="@{/admin/users}">Рецензенты</a>
+    </nav>
+
+    <aside th:replace="~{components/sidebar :: bar(
+        ${ { {'key':'overview','label':'Панель организатора','href':'/organizer','icon':'▦'},
+              {'key':'cycles','label':'Кампании','href':'/organizer/cycles','icon':'▤'},
+              {'key':'review','label':'Интерфейс оценки','href':'/expert/queue','icon':'✎'},
+              {'key':'results','label':'Панель результатов','href':'/organizer/cycles','icon':'▣'} } },
+        'cycles',
+        'Otklik',
+        'СИСТЕМА ПРОВЕРКИ')}"></aside>
+
+    <main class="app__main">
+        <div class="page__hero">
+            <div>
+                <h1 class="page__title">Кампании</h1>
+                <p class="page__subtitle">Все ваши циклы оценки и их статусы.</p>
+            </div>
+            <a th:href="@{/organizer/cycles/new}" class="btn btn--primary btn--lg">+ Новый цикл оценки</a>
+        </div>
+
+        <div class="card">
+            <table class="table">
+                <thead>
+                <tr>
+                    <th>Название</th>
+                    <th>Режим</th>
+                    <th>Анонимность</th>
+                    <th>Статус</th>
+                    <th>Дедлайн</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="c : ${campaigns}">
+                    <td>
+                        <strong th:text="${c.title}"></strong>
+                        <div class="muted small" th:text="${c.description}"></div>
+                    </td>
+                    <td><span class="tag" th:text="${c.mode}"></span></td>
+                    <td><span class="tag" th:text="${c.anonymityMode}"></span></td>
+                    <td>
+                        <span th:if="${c.status.name() == 'DRAFT'}" class="badge badge--gray">Черновик</span>
+                        <span th:if="${c.status.name() == 'ACTIVE'}" class="badge badge--inprogress">Активна</span>
+                        <span th:if="${c.status.name() == 'COMPLETED'}" class="badge badge--done">Завершена</span>
+                    </td>
+                    <td class="muted small" th:text="${c.deadline != null ? #temporals.format(c.deadline, 'dd.MM.yyyy HH:mm') : '—'}"></td>
+                    <td class="text-right">
+                        <a th:href="@{/organizer/cycles/{id}(id=${c.id})}" class="btn btn--ghost btn--sm">Открыть</a>
+                        <a th:if="${c.status.name() != 'DRAFT'}" th:href="@{/organizer/cycles/{id}/results(id=${c.id})}" class="btn btn--primary btn--sm">Результаты</a>
+                    </td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(campaigns)}">
+                    <td colspan="6" class="muted" style="text-align:center;padding:32px;">Кампаний нет. <a th:href="@{/organizer/cycles/new}">Создать →</a></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <footer th:replace="~{components/footer :: bar}"></footer>
+</div>
+</body>
+</html>

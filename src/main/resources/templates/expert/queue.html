@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{components/head :: head('Очередь проверок')}"></head>
+<body>
+<div class="app">
+    <header th:replace="~{components/topbar :: bar(~{::nav}, 'Поиск задач...')}"></header>
+    <nav class="topbar__nav"></nav>
+
+    <aside th:replace="~{components/sidebar :: bar(
+        ${ { {'key':'overview','label':'Панель организатора','href':'/organizer','icon':'▦'},
+              {'key':'queue','label':'Очередь проверок','href':'/expert/queue','icon':'▤'},
+              {'key':'review','label':'Интерфейс оценки','href':'/expert/queue','icon':'✎'},
+              {'key':'results','label':'Результаты','href':'/expert/queue','icon':'▣'} } },
+        'queue',
+        'Otklik',
+        'СИСТЕМА ПРОВЕРКИ')}"></aside>
+
+    <main class="app__main">
+        <div th:if="${param.submitted}" class="alert alert--ok">Рецензия отправлена. Спасибо!</div>
+
+        <div class="grid grid--3 mb-4">
+            <div class="card metric-card metric-card--accent">
+                <div class="metric">
+                    <div>
+                        <div class="card__label">Всего задач</div>
+                        <div class="metric__value" th:text="${totalWorksAvailable + inProgressCount + completedCount}">0</div>
+                        <div class="metric__delta" th:text="'+' + ${totalWorksAvailable} + ' доступно сейчас'">+12</div>
+                    </div>
+                    <div class="metric__icon">📋</div>
+                </div>
+            </div>
+            <div class="card metric-card">
+                <div class="metric">
+                    <div>
+                        <div class="card__label">В процессе</div>
+                        <div class="metric__value" th:text="${inProgressCount}">0</div>
+                        <div class="metric__delta is-muted">Активные у вас</div>
+                    </div>
+                    <div class="metric__icon">⏳</div>
+                </div>
+            </div>
+            <div class="card metric-card">
+                <div class="metric">
+                    <div>
+                        <div class="card__label">Завершено</div>
+                        <div class="metric__value" th:text="${completedCount}">0</div>
+                        <div class="metric__delta is-muted">Финальных рецензий</div>
+                    </div>
+                    <div class="metric__icon">✓</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid--main">
+            <div class="stack">
+                <div class="row row--between">
+                    <h2 style="font-size:20px;font-weight:600;">Доступные задачи</h2>
+                    <div class="row gap-2">
+                        <button type="button" class="btn btn--ghost btn--sm">⚲ Фильтр</button>
+                        <button type="button" class="btn btn--ghost btn--sm">⇅ Сортировка</button>
+                    </div>
+                </div>
+
+                <div th:each="mw : ${availableWorks}" class="task-card">
+                    <div class="task-card__head">
+                        <div class="task-card__left">
+                            <div class="task-card__icon">📄</div>
+                            <div>
+                                <div class="row gap-2 mb-2">
+                                    <span class="badge badge--new">Новое</span>
+                                    <span class="task-card__id" th:text="'ID: #' + ${#strings.substring(#strings.replace(mw.id.toString(), '-', ''), 0, 6).toUpperCase()}">ID: #ABC123</span>
+                                </div>
+                                <div class="task-card__title" th:text="${mw.title}">Название работы</div>
+                                <div class="task-card__meta">
+                                    <span th:text="'Загружено: ' + ${#temporals.format(mw.work.createdAt, 'dd MMM yyyy')}"></span>
+                                    <span th:text="'Кампания: ' + ${mw.campaignTitle}"></span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="task-card__right">
+                            <form th:action="@{/expert/queue/{id}/take(id=${mw.id})}" method="post">
+                                <button type="submit" class="btn btn--primary btn--sm">Взять в работу →</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <div th:if="${#lists.isEmpty(availableWorks)}" class="card" style="text-align:center;padding:32px;">
+                    <div class="muted">Доступных работ нет. Загляните позже.</div>
+                </div>
+            </div>
+
+            <div class="stack">
+                <h2 style="font-size:20px;font-weight:600;">Мои активные задачи</h2>
+
+                <div th:each="a : ${activeAssignments}" class="active-task">
+                    <div class="active-task__head">
+                        <span class="badge badge--inprogress">В процессе</span>
+                        <span class="muted small" th:text="${a.takenAt != null ? 'Взято: ' + #temporals.format(a.takenAt, 'dd MMM HH:mm') : ''}"></span>
+                    </div>
+                    <div class="active-task__title" th:text="${a.work.title}">Работа</div>
+                    <div class="progress"><i style="width:35%"></i></div>
+                    <div class="active-task__foot">
+                        <span>В процессе</span>
+                        <a th:href="@{/expert/review/{id}(id=${a.id})}">Продолжить ▸</a>
+                    </div>
+                </div>
+
+                <div th:if="${#lists.isEmpty(activeAssignments)}" class="card help-card">
+                    <strong>Нужна помощь?</strong>
+                    <p class="muted mt-2">Возьмите задачу из списка слева — она появится здесь и можно будет начать рецензирование.</p>
+                </div>
+
+                <div class="card card--dark help-card">
+                    <strong style="color:#fff">Нужна помощь?</strong>
+                    <p class="mt-2" style="color:var(--ink-300);font-size:13px;">Ознакомьтесь с нашими экспертными рекомендациями по новым критериям оценки 2026 года.</p>
+                    <button type="button" class="btn btn--white btn--sm mt-3">Посмотреть инструкции</button>
+                    <div class="help-card__ghost">?</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mt-4" th:if="${not #lists.isEmpty(recentDone)}">
+            <div class="card__title mb-3">Ваши недавние завершения</div>
+            <table class="table">
+                <thead><tr><th>Детали задачи</th><th>Дата завершения</th><th>Статус</th></tr></thead>
+                <tbody>
+                <tr th:each="a : ${recentDone}">
+                    <td>
+                        <strong th:text="${a.work.title}"></strong>
+                        <div class="muted small" th:text="'ID: #' + ${#strings.substring(#strings.replace(a.work.id.toString(), '-', ''), 0, 6).toUpperCase()}"></div>
+                    </td>
+                    <td class="muted small" th:text="${a.completedAt != null ? #temporals.format(a.completedAt, 'dd MMM yyyy') : '—'}"></td>
+                    <td><span class="badge badge--done">Проверено</span></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <footer th:replace="~{components/footer :: bar}"></footer>
+</div>
+</body>
+</html>

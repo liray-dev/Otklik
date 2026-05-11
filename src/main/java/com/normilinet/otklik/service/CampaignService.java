@@ -1,16 +1,24 @@
 package com.normilinet.otklik.service;
 
+import com.normilinet.otklik.domain.enums.AnonymityMode;
 import com.normilinet.otklik.domain.enums.CampaignMode;
 import com.normilinet.otklik.domain.enums.CampaignStatus;
+import com.normilinet.otklik.domain.enums.WorkStatus;
 import com.normilinet.otklik.domain.model.Campaign;
 import com.normilinet.otklik.domain.model.EvaluationCriterion;
+import com.normilinet.otklik.domain.model.User;
+import com.normilinet.otklik.domain.model.Work;
 import com.normilinet.otklik.domain.repository.CampaignRepository;
 import com.normilinet.otklik.domain.repository.EvaluationCriterionRepository;
+import com.normilinet.otklik.domain.repository.WorkRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -20,6 +28,7 @@ public class CampaignService {
 
     private final CampaignRepository campaignRepository;
     private final EvaluationCriterionRepository criterionRepository;
+    private final WorkRepository workRepository;
 
     @Transactional(readOnly = true)
     public List<Campaign> getAllCampaigns() {
@@ -28,47 +37,98 @@ public class CampaignService {
 
     @Transactional(readOnly = true)
     public List<Campaign> getActiveCampaigns() {
-        return campaignRepository.findAll(); // Could add a status filter here
+        return campaignRepository.findAllByStatus(CampaignStatus.ACTIVE);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Campaign> getByOrganizer(UUID organizerId) {
+        return campaignRepository.findAllByOrganizerIdOrderByCreatedAtDesc(organizerId);
     }
 
     @Transactional(readOnly = true)
     public Campaign getCampaignById(UUID id) {
-        return campaignRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Invalid campaign Id:" + id));
+        return campaignRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Кампания не найдена: " + id));
     }
 
     @Transactional
-    public Campaign createCampaign(String title, String description, CampaignMode mode, LocalDateTime deadline) {
+    public Campaign createCycle(User organizer,
+                                String title,
+                                String description,
+                                CampaignMode mode,
+                                AnonymityMode anonymity,
+                                Integer scaleMax,
+                                Integer expectedDurationDays,
+                                LocalDateTime deadline,
+                                List<CriterionInput> criteria) {
         Campaign campaign = new Campaign();
         campaign.setTitle(title);
         campaign.setDescription(description);
         campaign.setMode(mode);
-        campaign.setStatus(CampaignStatus.DRAFT);
+        campaign.setAnonymityMode(anonymity != null ? anonymity : AnonymityMode.OPEN);
+        campaign.setScaleMax(scaleMax != null ? scaleMax : 10);
+        campaign.setExpectedDurationDays(expectedDurationDays);
         campaign.setDeadline(deadline);
-        return campaignRepository.save(campaign);
+        campaign.setStatus(CampaignStatus.DRAFT);
+        campaign.setOrganizer(organizer);
+        campaign = campaignRepository.save(campaign);
+        saveCriteria(campaign, criteria);
+        return campaign;
     }
-    
+
+    @Transactional
+    public void updateCriteria(UUID campaignId, List<CriterionInput> criteria) {
+        Campaign campaign = getCampaignById(campaignId);
+        criterionRepository.deleteAllByCampaignId(campaignId);
+        saveCriteria(campaign, criteria);
+    }
+
+    private void saveCriteria(Campaign campaign, List<CriterionInput> criteria) {
+        if (criteria == null) return;
+        BigDecimal total = BigDecimal.ZERO;
+        int position = 0;
+        List<EvaluationCriterion> toSave = new ArrayList<>();
+        for (CriterionInput c : criteria) {
+            if (c.name == null || c.name.isBlank()) continue;
+            EvaluationCriterion ec = new EvaluationCriterion();
+            ec.setCampaign(campaign);
+            ec.setName(c.name.trim());
+            ec.setDescription(c.description);
+            BigDecimal w = c.weight != null ? c.weight : BigDecimal.ZERO;
+            ec.setWeight(w.setScale(2, RoundingMode.HALF_UP));
+            ec.setPosition(position++);
+            total = total.add(w);
+            toSave.add(ec);
+        }
+        if (!toSave.isEmpty() && total.compareTo(BigDecimal.valueOf(100)) != 0) {
+            throw new IllegalArgumentException("Сумма весов критериев должна быть 100. Сейчас: " + total);
+        }
+        criterionRepository.saveAll(toSave);
+    }
+
     @Transactional
     public void startCampaign(UUID id) {
         Campaign c = getCampaignById(id);
         c.setStatus(CampaignStatus.ACTIVE);
         campaignRepository.save(c);
+        List<Work> works = workRepository.findAllByCampaignIdAndStatus(id, WorkStatus.UPLOADED);
+        for (Work w : works) {
+            w.setStatus(WorkStatus.IN_QUEUE);
+        }
+        workRepository.saveAll(works);
     }
 
     @Transactional
-    public EvaluationCriterion addCriterion(UUID campaignId, String name, String description, int maxScore) {
-        Campaign campaign = getCampaignById(campaignId);
-        EvaluationCriterion criterion = new EvaluationCriterion();
-        criterion.setCampaign(campaign);
-        criterion.setName(name);
-        criterion.setDescription(description);
-        criterion.setMaxScore(maxScore);
-        return criterionRepository.save(criterion);
+    public void completeCampaign(UUID id) {
+        Campaign c = getCampaignById(id);
+        c.setStatus(CampaignStatus.COMPLETED);
+        campaignRepository.save(c);
     }
 
     @Transactional(readOnly = true)
     public List<EvaluationCriterion> getCriteriaForCampaign(UUID campaignId) {
-        return criterionRepository.findAll().stream()
-                .filter(c -> c.getCampaign().getId().equals(campaignId))
-                .toList();
+        return criterionRepository.findAllByCampaignIdOrderByPositionAsc(campaignId);
     }
+
+    public record CriterionInput(String name, String description, BigDecimal weight) {}
 }

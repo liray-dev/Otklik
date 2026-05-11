@@ -1,43 +1,39 @@
 <!DOCTYPE html>
 <html lang="ru" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{layout/base :: head('Вход')}"></head>
+<head th:replace="~{components/head :: head('Вход')}"></head>
 <body>
-    <div class="auth-wrapper">
-        <div class="glass-card">
-            <h1 class="auth-title">Добро пожаловать</h1>
-            <p class="auth-subtitle">Войдите в систему Otklik</p>
-
-            <div th:if="${param.error}" class="alert alert-error">
-                Неверное имя пользователя или пароль.
-            </div>
-            <div th:if="${param.logout}" class="alert alert-success">
-                Вы успешно вышли из системы.
-            </div>
-            <div th:if="${param.registered}" class="alert alert-success">
-                Регистрация успешна! Теперь вы можете войти.
-            </div>
-
-            <form th:action="@{/login}" method="post">
-                <div class="form-group">
-                    <label for="username" class="form-label">Имя пользователя</label>
-                    <input type="text" id="username" name="username" class="form-control" required autofocus>
-                </div>
-                
-                <div class="form-group">
-                    <label for="password" class="form-label">Пароль</label>
-                    <input type="password" id="password" name="password" class="form-control" required>
-                </div>
-                
-                <button type="submit" class="btn mt-2">Войти</button>
-            </form>
-
-            <div class="text-center mt-4 text-muted">
-                <small>Вход возможен только для зарегистрированных пользователей. Регистрация требует инвайт-код.</small>
-                <div class="mt-2">
-                    <a th:href="@{/register}">Нет аккаунта? Зарегистрироваться по инвайту</a>
-                </div>
+<div class="auth-wrap">
+    <div class="auth-card fade-in">
+        <div class="auth-card__brand">
+            <div class="brand__mark">N</div>
+            <div>
+                <div style="font-weight:700;font-size:16px;">NormIliNet · Otklik</div>
+                <div class="muted small">Сервис экспертной обратной связи</div>
             </div>
         </div>
+        <div class="auth-card__title">С возвращением</div>
+        <div class="auth-card__sub">Войдите в систему</div>
+
+        <div th:if="${param.error}" class="alert alert--err">Неверное имя пользователя или пароль.</div>
+        <div th:if="${param.logout}" class="alert alert--ok">Вы вышли из системы.</div>
+        <div th:if="${param.registered}" class="alert alert--ok">Регистрация прошла успешно. Войдите.</div>
+
+        <form th:action="@{/login}" method="post">
+            <div class="field">
+                <label class="field__label" for="username">Имя пользователя</label>
+                <input id="username" name="username" type="text" class="input" required autofocus>
+            </div>
+            <div class="field">
+                <label class="field__label" for="password">Пароль</label>
+                <input id="password" name="password" type="password" class="input" required>
+            </div>
+            <button type="submit" class="btn btn--primary btn--block btn--lg">Войти</button>
+        </form>
+
+        <div class="auth-card__foot">
+            Регистрация по инвайт-коду · <a th:href="@{/register}">Перейти к регистрации</a>
+        </div>
     </div>
+</div>
 </body>
 </html>

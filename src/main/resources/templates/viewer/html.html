@@ -1,0 +1,9 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{components/head :: head('Документ')}"></head>
+<body style="background:var(--paper);padding:32px;">
+<div class="viewer__body" style="max-width:900px;margin:0 auto;background:#fff;border-radius:12px;padding:48px;box-shadow:var(--shadow-md);">
+    <div th:utext="${html}"></div>
+</div>
+</body>
+</html>

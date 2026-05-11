@@ -9,6 +9,8 @@ import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.math.BigDecimal;
+
 @Entity
 @Table(name = "evaluation_criteria")
 @Getter
@@ -25,6 +27,9 @@ public class EvaluationCriterion extends BaseEntity {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Column(name = "max_score", nullable = false)
-    private int maxScore;
+    @Column(name = "weight", nullable = false, precision = 5, scale = 2)
+    private BigDecimal weight = BigDecimal.ZERO;
+
+    @Column(name = "position", nullable = false)
+    private int position = 0;
 }

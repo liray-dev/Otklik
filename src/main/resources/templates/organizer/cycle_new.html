@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{components/head :: head('Настройка нового цикла оценки')}"></head>
+<body>
+<div class="app">
+    <header th:replace="~{components/topbar :: bar(~{::nav}, null)}"></header>
+    <nav class="topbar__nav">
+        <a th:href="@{/organizer}" class="is-active">Обзор</a>
+        <a th:href="@{/organizer/cycles}">Кампании</a>
+        <a th:href="@{/admin/users}">Рецензенты</a>
+    </nav>
+
+    <aside th:replace="~{components/sidebar :: bar(
+        ${ { {'key':'overview','label':'Панель организатора','href':'/organizer','icon':'▦'},
+              {'key':'queue','label':'Очередь проверок','href':'/expert/queue','icon':'▤'},
+              {'key':'review','label':'Интерфейс оценки','href':'/expert/queue','icon':'✎'},
+              {'key':'results','label':'Панель результатов','href':'/organizer/cycles','icon':'▣'} } },
+        'overview',
+        'Otklik',
+        'КОРПОРАТИВНЫЙ МОДЕРНИЗМ')}"></aside>
+
+    <main class="app__main">
+        <form th:action="@{/organizer/cycles/new}" method="post" enctype="multipart/form-data" id="cycle-form">
+            <div class="page__hero">
+                <div>
+                    <h1 class="page__title">Настройка нового цикла оценки</h1>
+                    <p class="page__subtitle">Инициализируйте структурированный рабочий процесс оценки. Определите объекты, выберите модель взаимодействия и настройте критерии анализа.</p>
+                </div>
+            </div>
+
+            <div class="grid grid--main">
+                <div class="stack">
+                    <div class="card">
+                        <label class="field__label" for="title">Название цикла</label>
+                        <input id="title" name="title" class="input mt-2" placeholder="напр. Проектный Практикум · Весна 2026" required>
+
+                        <label class="field__label mt-4" for="description">Описание (опционально)</label>
+                        <textarea id="description" name="description" class="textarea mt-2" rows="3" placeholder="Кратко: что проверяют, кто участвует, ключевой контекст."></textarea>
+                    </div>
+
+                    <div class="card">
+                        <label class="field__label">Загрузка объектов</label>
+                        <div id="dropzone" class="dropzone mt-2">
+                            <div class="dropzone__icon">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                            </div>
+                            <div class="dropzone__main">Перетащите файлы сюда</div>
+                            <div class="dropzone__sub">Принимаются файлы PDF, DOCX, XLSX, изображения, аудио, видео, ZIP (макс. 100 МБ на файл)</div>
+                            <input id="file-input" name="files" type="file" multiple class="hidden">
+                        </div>
+                        <ul id="file-list" class="stack mt-3" style="gap:8px;"></ul>
+
+                        <div class="dropzone__divider">Или укажите ссылки</div>
+                        <div id="link-list" class="stack" style="gap:8px;">
+                            <input name="links" class="input" placeholder="https://repository.edu/shared/...">
+                        </div>
+                        <button type="button" id="add-link" class="btn btn--ghost btn--sm mt-3">+ Добавить ссылку</button>
+                    </div>
+
+                    <div class="card">
+                        <div class="card__head">
+                            <div class="card__title">Конструктор критериев</div>
+                            <button type="button" id="add-criterion" class="btn btn--ghost btn--sm">+ Добавить метрику</button>
+                        </div>
+                        <div id="criteria" class="criteria-table">
+                            <div class="criterion-row">
+                                <div class="handle">⋮⋮</div>
+                                <div class="field">
+                                    <label class="field__label">Название метрики</label>
+                                    <input name="criterionName" class="input" placeholder="Методологическая ясность" required>
+                                </div>
+                                <div class="field">
+                                    <label class="field__label">Шкала</label>
+                                    <input class="input" value="Абсолютная 1-10" readonly>
+                                </div>
+                                <div class="field">
+                                    <label class="field__label">Вес, %</label>
+                                    <input name="criterionWeight" class="input criterion-weight" type="number" min="0" max="100" step="1" value="50" required>
+                                </div>
+                                <button type="button" class="delete" aria-label="Удалить">🗑</button>
+                            </div>
+                            <div class="criterion-row">
+                                <div class="handle">⋮⋮</div>
+                                <div class="field">
+                                    <label class="field__label">Название метрики</label>
+                                    <input name="criterionName" class="input" placeholder="Точность содержания" required>
+                                </div>
+                                <div class="field">
+                                    <label class="field__label">Шкала</label>
+                                    <input class="input" value="Абсолютная 1-10" readonly>
+                                </div>
+                                <div class="field">
+                                    <label class="field__label">Вес, %</label>
+                                    <input name="criterionWeight" class="input criterion-weight" type="number" min="0" max="100" step="1" value="50" required>
+                                </div>
+                                <button type="button" class="delete" aria-label="Удалить">🗑</button>
+                            </div>
+                        </div>
+                        <div class="criteria-foot">
+                            <span>Сумма весов метрик должна составлять 100%</span>
+                            <span id="weight-total" class="criteria-total">Итого: 100%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stack">
+                    <div class="card">
+                        <div class="card__label">Режим взаимодействия</div>
+                        <div class="radio-list mt-3">
+                            <label>
+                                <input type="radio" name="mode" value="EXPERT" checked>
+                                <div>
+                                    <div class="radio-list__title">Экспертная оценка</div>
+                                    <div class="radio-list__sub">Только проверенные специалисты</div>
+                                </div>
+                            </label>
+                            <label>
+                                <input type="radio" name="mode" value="PEER_TO_PEER">
+                                <div>
+                                    <div class="radio-list__title">Коллегиальная оценка</div>
+                                    <div class="radio-list__sub">Внутренние взаимные обзоры</div>
+                                </div>
+                            </label>
+                            <label>
+                                <input type="radio" name="mode" value="CONTEST">
+                                <div>
+                                    <div class="radio-list__title">Конкурс</div>
+                                    <div class="radio-list__sub">Открытые или публичные заявки</div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card__label">Уровень анонимности</div>
+                        <div class="radio-list mt-3">
+                            <label>
+                                <input type="radio" name="anonymity" value="OPEN">
+                                <div>
+                                    <div class="radio-list__title">Открытый</div>
+                                    <div class="radio-list__sub">Все видят авторов и рецензентов</div>
+                                </div>
+                            </label>
+                            <label>
+                                <input type="radio" name="anonymity" value="SINGLE_BLIND">
+                                <div>
+                                    <div class="radio-list__title">Single-Blind</div>
+                                    <div class="radio-list__sub">Рецензент не видит автора</div>
+                                </div>
+                            </label>
+                            <label>
+                                <input type="radio" name="anonymity" value="DOUBLE_BLIND" checked>
+                                <div>
+                                    <div class="radio-list__title">Double-Blind</div>
+                                    <div class="radio-list__sub">Никто не видит никого</div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="card card--dark">
+                        <div class="card__title" style="color:#fff">Итоги</div>
+                        <div class="mt-3">
+                            <div class="card__row"><span>Выбрано рецензентов</span><strong>—</strong></div>
+                            <div class="card__row"><span>Ожидаемая длительность</span>
+                                <strong>
+                                    <input name="expectedDurationDays" type="number" min="1" value="14" style="width:60px;background:transparent;border:0;color:#fff;text-align:right;font-weight:700;"> дней
+                                </strong>
+                            </div>
+                            <div class="card__row"><span>Уровень анонимности</span><strong id="summary-anon">Double-Blind</strong></div>
+                        </div>
+                        <input type="hidden" name="scaleMax" value="10">
+                        <button type="submit" class="btn btn--primary btn--block btn--lg mt-4">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>
+                            Запустить цикл оценки
+                        </button>
+                        <p class="mt-3" style="color:var(--ink-300);font-size:12px;text-align:center;">Система уведомит всех назначенных рецензентов после запуска.</p>
+                    </div>
+
+                    <div class="card">
+                        <div class="row gap-2">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                            <strong>Предпросмотр для рецензента</strong>
+                        </div>
+                        <div class="mt-3" style="display:flex;gap:6px;">
+                            <span style="height:24px;width:24px;border-radius:6px;background:var(--paper);"></span>
+                            <span style="height:24px;width:24px;border-radius:6px;background:var(--paper);"></span>
+                            <span style="height:24px;width:24px;border-radius:6px;background:var(--paper);"></span>
+                            <span style="height:24px;width:24px;border-radius:6px;background:var(--paper);"></span>
+                        </div>
+                        <div class="mt-3" style="height:8px;border-radius:4px;background:var(--paper);"></div>
+                        <div class="mt-2" style="height:8px;border-radius:4px;background:var(--paper);width:70%;"></div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </main>
+
+    <footer th:replace="~{components/footer :: bar}"></footer>
+</div>
+
+<script th:src="@{/js/criteria-builder.js}"></script>
+<script th:src="@{/js/upload.js}"></script>
+</body>
+</html>

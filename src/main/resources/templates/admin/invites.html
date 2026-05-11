@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{components/head :: head('Инвайты')}"></head>
+<body>
+<div class="app">
+    <header th:replace="~{components/topbar :: bar(~{::nav}, null)}"></header>
+    <nav class="topbar__nav">
+        <a th:href="@{/admin}">Обзор</a>
+        <a th:href="@{/admin/users}">Пользователи</a>
+        <a th:href="@{/admin/invites}" class="is-active">Инвайты</a>
+    </nav>
+
+    <aside th:replace="~{components/sidebar :: bar(
+        ${ { {'key':'overview','label':'Обзор','href':'/admin','icon':'▦'},
+              {'key':'users','label':'Пользователи','href':'/admin/users','icon':'▤'},
+              {'key':'invites','label':'Инвайты','href':'/admin/invites','icon':'✎'} } },
+        'invites',
+        'Otklik',
+        'АДМИНИСТРИРОВАНИЕ')}"></aside>
+
+    <main class="app__main">
+        <div class="page__hero">
+            <div>
+                <h1 class="page__title">Инвайт-коды</h1>
+                <p class="page__subtitle">Создавайте коды для регистрации новых пользователей.</p>
+            </div>
+        </div>
+
+        <div class="grid grid--main">
+            <div class="card">
+                <div class="card__title mb-3">Все инвайты</div>
+                <table class="table">
+                    <thead>
+                    <tr>
+                        <th>Код</th>
+                        <th>Роль</th>
+                        <th>Использований</th>
+                        <th>Действителен до</th>
+                        <th>Статус</th>
+                        <th></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="i : ${invites}">
+                        <td style="font-family:monospace;font-size:13px;" th:text="${i.code}"></td>
+                        <td><span class="tag" th:text="${i.role}"></span></td>
+                        <td th:text="${i.activationsCount} + ' / ' + ${i.usagesLimit}"></td>
+                        <td class="muted small" th:text="${i.validUntil != null ? #temporals.format(i.validUntil, 'dd.MM.yyyy HH:mm') : 'Без срока'}"></td>
+                        <td>
+                            <span th:if="${i.active}" class="badge badge--done">Активен</span>
+                            <span th:if="${not i.active}" class="badge badge--gray">Отозван</span>
+                        </td>
+                        <td class="text-right">
+                            <form th:if="${i.active}" th:action="@{/admin/invites/{id}/revoke(id=${i.id})}" method="post" style="display:inline;">
+                                <button type="submit" class="btn btn--ghost btn--sm">Отозвать</button>
+                            </form>
+                        </td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(invites)}">
+                        <td colspan="6" class="muted" style="text-align:center;padding:24px;">Инвайтов ещё нет.</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="card">
+                <div class="card__title mb-3">Создать инвайт</div>
+                <form th:action="@{/admin/invites}" method="post" class="stack">
+                    <div class="field">
+                        <label class="field__label">Код</label>
+                        <input name="code" class="input" placeholder="INVITE-2026-001" required>
+                    </div>
+                    <div class="field">
+                        <label class="field__label">Роль</label>
+                        <select name="role" class="select" required>
+                            <option th:each="r : ${roles}" th:value="${r}" th:text="${r}"></option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label class="field__label">Лимит использований</label>
+                        <input name="usagesLimit" type="number" min="1" value="1" class="input" required>
+                    </div>
+                    <div class="field">
+                        <label class="field__label">Действителен до (опционально)</label>
+                        <input name="validUntil" type="datetime-local" class="input">
+                    </div>
+                    <button type="submit" class="btn btn--primary mt-3">Создать инвайт</button>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <footer th:replace="~{components/footer :: bar}"></footer>
+</div>
+</body>
+</html>

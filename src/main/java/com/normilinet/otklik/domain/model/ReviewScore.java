@@ -9,6 +9,8 @@ import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.math.BigDecimal;
+
 @Entity
 @Table(name = "review_scores")
 @Getter
@@ -23,6 +25,6 @@ public class ReviewScore extends BaseEntity {
     @JoinColumn(name = "criteria_id", nullable = false)
     private EvaluationCriterion criteria;
 
-    @Column(nullable = false)
-    private int score;
+    @Column(nullable = false, precision = 6, scale = 2)
+    private BigDecimal score;
 }

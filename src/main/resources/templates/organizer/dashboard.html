@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{components/head :: head('Панель организатора')}"></head>
+<body>
+<div class="app">
+    <header th:replace="~{components/topbar :: bar(~{::nav}, null)}"></header>
+    <nav class="topbar__nav">
+        <a th:href="@{/organizer}" class="is-active">Обзор</a>
+        <a th:href="@{/organizer/cycles}">Кампании</a>
+        <a th:href="@{/admin/users}">Рецензенты</a>
+    </nav>
+
+    <aside th:replace="~{components/sidebar :: bar(
+        ${ { {'key':'overview','label':'Панель организатора','href':'/organizer','icon':'▦'},
+              {'key':'cycles','label':'Кампании','href':'/organizer/cycles','icon':'▤'},
+              {'key':'review','label':'Интерфейс оценки','href':'/expert/queue','icon':'✎'},
+              {'key':'results','label':'Панель результатов','href':'/organizer/cycles','icon':'▣'} } },
+        'overview',
+        'Otklik',
+        'СИСТЕМА ПРОВЕРКИ')}"></aside>
+
+    <main class="app__main">
+        <div class="page__hero">
+            <div>
+                <h1 class="page__title">Панель организатора</h1>
+                <p class="page__subtitle">Общая картина по вашим кампаниям и статусам проверок.</p>
+            </div>
+            <a th:href="@{/organizer/cycles/new}" class="btn btn--primary btn--lg">+ Новый цикл оценки</a>
+        </div>
+
+        <div class="grid grid--3 mb-4">
+            <div class="card metric-card metric-card--accent">
+                <div class="metric">
+                    <div>
+                        <div class="card__label">Активные кампании</div>
+                        <div class="metric__value" th:text="${active}">0</div>
+                        <div class="metric__delta is-muted">В работе сейчас</div>
+                    </div>
+                    <div class="metric__icon">▶</div>
+                </div>
+            </div>
+            <div class="card metric-card">
+                <div class="metric">
+                    <div>
+                        <div class="card__label">Черновики</div>
+                        <div class="metric__value" th:text="${draft}">0</div>
+                        <div class="metric__delta is-muted">Готовы к запуску</div>
+                    </div>
+                    <div class="metric__icon">✎</div>
+                </div>
+            </div>
+            <div class="card metric-card">
+                <div class="metric">
+                    <div>
+                        <div class="card__label">Завершённые</div>
+                        <div class="metric__value" th:text="${completed}">0</div>
+                        <div class="metric__delta is-muted">Итоги доступны</div>
+                    </div>
+                    <div class="metric__icon">✓</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card__head">
+                <div class="card__title">Ваши кампании</div>
+                <a th:href="@{/organizer/cycles}" class="muted">Все →</a>
+            </div>
+            <table class="table">
+                <thead>
+                <tr>
+                    <th>Название</th>
+                    <th>Режим</th>
+                    <th>Анонимность</th>
+                    <th>Статус</th>
+                    <th>Создана</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="c : ${campaigns}">
+                    <td><strong th:text="${c.title}"></strong></td>
+                    <td><span class="tag" th:text="${c.mode}"></span></td>
+                    <td><span class="tag" th:text="${c.anonymityMode}"></span></td>
+                    <td>
+                        <span th:if="${c.status.name() == 'DRAFT'}" class="badge badge--gray">Черновик</span>
+                        <span th:if="${c.status.name() == 'ACTIVE'}" class="badge badge--inprogress">Активна</span>
+                        <span th:if="${c.status.name() == 'COMPLETED'}" class="badge badge--done">Завершена</span>
+                    </td>
+                    <td class="muted small" th:text="${#temporals.format(c.createdAt, 'dd.MM.yyyy')}"></td>
+                    <td class="text-right">
+                        <a th:href="@{/organizer/cycles/{id}(id=${c.id})}" class="btn btn--ghost btn--sm">Открыть</a>
+                    </td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(campaigns)}">
+                    <td colspan="6" class="muted" style="text-align:center;padding:32px;">
+                        Пока нет ни одной кампании. <a th:href="@{/organizer/cycles/new}">Создайте первую →</a>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <footer th:replace="~{components/footer :: bar}"></footer>
+</div>
+</body>
+</html>

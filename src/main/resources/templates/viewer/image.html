@@ -1,0 +1,7 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{components/head :: head('Изображение')}"></head>
+<body style="background:var(--paper);padding:20px;">
+<img th:src="${src}" alt="Изображение" style="max-width:100%;height:auto;display:block;margin:0 auto;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.1);">
+</body>
+</html>

@@ -20,6 +20,7 @@ out/
 .apt_generated
 .classpath
 .factorypath
+.claude
 .project
 .settings
 .springBeans

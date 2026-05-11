@@ -1,0 +1,9 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{components/head :: head('Документ')}"></head>
+<body>
+<div style="padding:0;margin:0;height:100vh;">
+    <iframe th:src="${pdfUrl}" style="width:100%;height:100vh;border:0;"></iframe>
+</div>
+</body>
+</html>

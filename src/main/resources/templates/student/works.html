@@ -1,40 +1,78 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{layout/student :: head('Мои работы')}"></head>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{components/head :: head('Мои работы')}"></head>
 <body>
-<div class="admin-layout">
-    <div th:replace="~{layout/student :: sidebar}"></div>
-    <main class="main-content">
-        <div class="topbar">
-            <h1 class="page-title">Мои работы</h1>
+<div class="app">
+    <header th:replace="~{components/topbar :: bar(~{::nav}, null)}"></header>
+    <nav class="topbar__nav">
+        <a th:href="@{/student/works}" class="is-active">Мои работы</a>
+        <a th:href="@{/student/cycles}">Доступные кампании</a>
+    </nav>
+
+    <aside th:replace="~{components/sidebar :: bar(
+        ${ { {'key':'works','label':'Мои работы','href':'/student/works','icon':'▦'},
+              {'key':'cycles','label':'Доступные кампании','href':'/student/cycles','icon':'▤'} } },
+        'works',
+        'Otklik',
+        'СИСТЕМА ПРОВЕРКИ')}"></aside>
+
+    <main class="app__main">
+        <div th:if="${param.submitted}" class="alert alert--ok">Работа отправлена.</div>
+
+        <div class="page__hero">
+            <div>
+                <h1 class="page__title">Мои работы</h1>
+                <p class="page__subtitle">Статус проверок и полученные рецензии.</p>
+            </div>
+            <a th:href="@{/student/cycles}" class="btn btn--primary">+ Отправить новую</a>
         </div>
-        <div class="card">
-            <h3>Отвеченные работы</h2>
-            <table class="table mt-4">
-                <thead>
-                    <tr>
-                        <th>Кампания</th>
-                        <th>Статус проверки</th>
-                        <th>Комментарий / Текст</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr th:each="w : ${works}">
-                        <td style="font-weight:500;" th:text="${w.campaign.title}">Кампания</td>
-                        <td>
-                            <span th:class="'badge badge-' + ${w.status}" th:text="${w.status}"></span>
-                        </td>
-                        <td>
-                            <div style="max-height: 50px; overflow: hidden; text-overflow: ellipsis; font-size: 0.9rem;" th:text="${w.contentText}"></div>
-                        </td>
-                    </tr>
-                    <tr th:if="${#lists.isEmpty(works)}">
-                        <td colspan="3" style="text-align:center;" class="text-muted">Вы еще не отправляли ни одной работы.</td>
-                    </tr>
-                </tbody>
-            </table>
+
+        <div class="stack">
+            <div th:each="row : ${rows}" class="card" th:with="w=${row.work}">
+                <div class="card__head">
+                    <div>
+                        <div class="card__title" th:text="${w.title}">Название</div>
+                        <div class="muted small" th:text="'Кампания: ' + ${w.campaign.title}"></div>
+                    </div>
+                    <div class="row gap-2">
+                        <span th:if="${w.status.name() == 'UPLOADED'}" class="badge badge--gray">Загружено</span>
+                        <span th:if="${w.status.name() == 'IN_QUEUE'}" class="badge badge--gray">В очереди</span>
+                        <span th:if="${w.status.name() == 'UNDER_REVIEW'}" class="badge badge--inprogress">В процессе</span>
+                        <span th:if="${w.status.name() == 'REVIEWED'}" class="badge badge--done">Проверено</span>
+                        <span th:if="${w.status.name() == 'NEEDS_REVISION'}" class="badge badge--wait">Нужны правки</span>
+                    </div>
+                </div>
+
+                <div class="muted small" th:if="${not #lists.isEmpty(row.attachments)}">
+                    Файлы:
+                    <span th:each="att, iter : ${row.attachments}" th:if="${not att.voice}">
+                        <a th:href="@{/files/work/{id}(id=${att.id})}" target="_blank" th:text="${att.originalFilename}"></a><span th:if="${not iter.last}">, </span>
+                    </span>
+                </div>
+                <div class="muted small mt-2" th:if="${w.externalLink != null}">
+                    Ссылка: <a th:href="${w.externalLink}" target="_blank" th:text="${w.externalLink}"></a>
+                </div>
+
+                <div class="mt-3">
+                    <strong class="small" th:text="'Рецензий: ' + ${row.reviewsDone} + ' / ' + ${row.assignmentsTotal}"></strong>
+                    <div th:each="r : ${row.reviews}" class="mt-3" style="padding:12px;border:1px solid var(--border-soft);border-radius:8px;background:var(--paper);">
+                        <div class="row row--between mb-2">
+                            <span class="small"><strong th:text="${r.assignment.reviewer.username}"></strong></span>
+                            <span class="num small" th:text="${r.totalScore != null ? r.totalScore : '—'}">—</span>
+                        </div>
+                        <div class="small" th:text="${r.feedback}"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div th:if="${#lists.isEmpty(rows)}" class="card" style="text-align:center;padding:40px;">
+                <div class="muted">Вы ещё не отправляли ни одной работы.</div>
+                <a th:href="@{/student/cycles}" class="btn btn--primary mt-3">Отправить первую</a>
+            </div>
         </div>
     </main>
+
+    <footer th:replace="~{components/footer :: bar}"></footer>
 </div>
 </body>
 </html>

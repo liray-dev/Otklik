@@ -9,6 +9,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -26,13 +27,19 @@ public class Work extends BaseEntity {
     @JoinColumn(name = "student_id", nullable = false)
     private User student;
 
+    @Column(nullable = false)
+    private String title;
+
     @Column(name = "content_text", columnDefinition = "TEXT")
     private String contentText;
 
-    @Column(name = "file_path", length = 500)
-    private String filePath;
+    @Column(name = "external_link", length = 1000)
+    private String externalLink;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 50)
     private WorkStatus status;
+
+    @Version
+    private Long version;
 }

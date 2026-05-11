@@ -1,14 +1,23 @@
 package com.normilinet.otklik.web.controller;
 
-import com.normilinet.otklik.domain.enums.CampaignMode;
-import com.normilinet.otklik.domain.model.Campaign;
-import com.normilinet.otklik.service.CampaignService;
+import com.normilinet.otklik.domain.enums.Role;
+import com.normilinet.otklik.domain.model.Invite;
+import com.normilinet.otklik.domain.model.User;
+import com.normilinet.otklik.domain.repository.InviteRepository;
+import com.normilinet.otklik.domain.repository.UserRepository;
+import com.normilinet.otklik.service.InviteService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import java.time.LocalDateTime;
+import java.util.Comparator;
+import java.util.List;
 import java.util.UUID;
 
 @Controller
@@ -16,49 +25,55 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class AdminController {
 
-    private final CampaignService campaignService;
+    private final UserRepository userRepository;
+    private final InviteRepository inviteRepository;
+    private final InviteService inviteService;
 
     @GetMapping
     public String dashboard(Model model) {
+        long users = userRepository.count();
+        long invites = inviteRepository.count();
+        long activeInvites = inviteRepository.findAll().stream().filter(Invite::isActive).count();
+        model.addAttribute("usersCount", users);
+        model.addAttribute("invitesCount", invites);
+        model.addAttribute("activeInvitesCount", activeInvites);
         return "admin/dashboard";
     }
 
-    @GetMapping("/campaigns")
-    public String listCampaigns(Model model) {
-        model.addAttribute("campaigns", campaignService.getAllCampaigns());
-        return "admin/campaigns";
+    @GetMapping("/users")
+    public String users(Model model) {
+        List<User> users = userRepository.findAll().stream()
+                .sorted(Comparator.comparing(User::getCreatedAt).reversed())
+                .toList();
+        model.addAttribute("users", users);
+        return "admin/users";
     }
 
-    @PostMapping("/campaigns/create")
-    public String createCampaign(@RequestParam String title, 
-                                 @RequestParam String description, 
-                                 @RequestParam String mode,
-                                 @RequestParam(required = false) String deadline) {
-        LocalDateTime dt = (deadline != null && !deadline.isEmpty()) ? LocalDateTime.parse(deadline) : null;
-        campaignService.createCampaign(title, description, CampaignMode.valueOf(mode), dt);
-        return "redirect:/admin/campaigns";
+    @GetMapping("/invites")
+    public String invites(Model model) {
+        List<Invite> invites = inviteRepository.findAll().stream()
+                .sorted(Comparator.comparing(Invite::getCreatedAt).reversed())
+                .toList();
+        model.addAttribute("invites", invites);
+        model.addAttribute("roles", Role.values());
+        return "admin/invites";
     }
 
-    @GetMapping("/campaigns/{id}")
-    public String viewCampaign(@PathVariable UUID id, Model model) {
-        Campaign campaign = campaignService.getCampaignById(id);
-        model.addAttribute("campaign", campaign);
-        model.addAttribute("criteria", campaignService.getCriteriaForCampaign(id));
-        return "admin/campaign_view";
-    }
-    
-    @PostMapping("/campaigns/{id}/start")
-    public String startCampaign(@PathVariable UUID id) {
-        campaignService.startCampaign(id);
-        return "redirect:/admin/campaigns/" + id;
+    @PostMapping("/invites")
+    public String createInvite(@RequestParam String code,
+                               @RequestParam String role,
+                               @RequestParam(defaultValue = "1") int usagesLimit,
+                               @RequestParam(required = false) String validUntil) {
+        LocalDateTime until = (validUntil != null && !validUntil.isBlank()) ? LocalDateTime.parse(validUntil) : null;
+        inviteService.createInvite(code, Role.valueOf(role), usagesLimit, until);
+        return "redirect:/admin/invites";
     }
 
-    @PostMapping("/campaigns/{id}/criteria")
-    public String addCriterion(@PathVariable UUID id,
-                               @RequestParam String name, 
-                               @RequestParam String description, 
-                               @RequestParam int maxScore) {
-        campaignService.addCriterion(id, name, description, maxScore);
-        return "redirect:/admin/campaigns/" + id;
+    @PostMapping("/invites/{id}/revoke")
+    public String revoke(@PathVariable UUID id) {
+        Invite invite = inviteRepository.findById(id).orElseThrow();
+        invite.setActive(false);
+        inviteRepository.save(invite);
+        return "redirect:/admin/invites";
     }
 }
