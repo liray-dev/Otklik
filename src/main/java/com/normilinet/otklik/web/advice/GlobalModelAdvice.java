@@ -44,4 +44,36 @@ public class GlobalModelAdvice {
         User u = currentUser();
         return u != null && u.getRole() == Role.ADMIN;
     }
+
+    @ModelAttribute("roleSidebar")
+    public java.util.List<java.util.Map<String, String>> roleSidebar() {
+        User u = currentUser();
+        if (u == null) return java.util.List.of();
+        return switch (u.getRole()) {
+            case ADMIN -> java.util.List.of(
+                    java.util.Map.of("key","overview","label","Обзор","href","/admin","icon","▦"),
+                    java.util.Map.of("key","users","label","Пользователи","href","/admin/users","icon","▤"),
+                    java.util.Map.of("key","invites","label","Инвайты","href","/admin/invites","icon","✎"),
+                    java.util.Map.of("key","settings","label","Настройки","href","/admin/settings","icon","⚙"));
+            case ORGANIZER, EXPERT -> java.util.List.of(
+                    java.util.Map.of("key","overview","label","Панель организатора","href","/organizer","icon","▦"),
+                    java.util.Map.of("key","queue","label","Очередь проверок","href","/expert/queue","icon","▤"),
+                    java.util.Map.of("key","review","label","Интерфейс оценки","href","/expert/in-progress","icon","✎"),
+                    java.util.Map.of("key","results","label","Панель результатов","href","/expert/completed","icon","▣"));
+            case STUDENT -> java.util.List.of(
+                    java.util.Map.of("key","works","label","Мои работы","href","/student/works","icon","▦"),
+                    java.util.Map.of("key","cycles","label","Доступные кампании","href","/student/cycles","icon","▤"));
+        };
+    }
+
+    @ModelAttribute("roleSidebarSubtitle")
+    public String roleSidebarSubtitle() {
+        User u = currentUser();
+        if (u == null) return "СИСТЕМА ПРОВЕРКИ";
+        return switch (u.getRole()) {
+            case ADMIN -> "АДМИНИСТРИРОВАНИЕ";
+            case ORGANIZER, EXPERT -> "СИСТЕМА ПРОВЕРКИ";
+            case STUDENT -> "ЛИЧНЫЙ КАБИНЕТ";
+        };
+    }
 }

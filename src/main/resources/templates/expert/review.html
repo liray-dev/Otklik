@@ -43,36 +43,54 @@
         <form id="review-form" th:action="@{/expert/review/{id}/submit(id=${assignment.id})}" method="post">
             <div class="grid grid--main">
                 <div class="stack">
-                    <div class="viewer">
+                    <div th:if="${work.work.contentText != null and !#strings.isEmpty(work.work.contentText)}" class="card">
+                        <div class="card__label mb-2">Описание работы</div>
+                        <div th:text="${work.work.contentText}" style="white-space:pre-wrap;"></div>
+                    </div>
+
+                    <div th:if="${work.work.externalLink != null and !#strings.isEmpty(work.work.externalLink)}" class="card">
+                        <div class="card__label mb-2">Ссылка</div>
+                        <a th:href="${work.work.externalLink}" target="_blank" th:text="${work.work.externalLink}"></a>
+                    </div>
+
+                    <div th:if="${not #lists.isEmpty(attachments)}" class="card">
+                        <div class="card__label mb-3" th:text="'Файлы работы (' + ${#lists.size(attachments)} + ')'">Файлы</div>
+                        <div class="row gap-2" style="flex-wrap:wrap;">
+                            <a th:each="att : ${attachments}"
+                               th:href="@{/expert/review/{aid}(aid=${assignment.id},file=${att.id})}"
+                               th:classappend="${activeAttachment != null and att.id == activeAttachment.id} ? 'btn--primary' : 'btn--ghost'"
+                               class="btn btn--sm"
+                               th:text="${att.originalFilename}">file</a>
+                        </div>
+                    </div>
+
+                    <div class="viewer" th:if="${activeAttachment != null}">
                         <div class="viewer__head">
                             <div class="viewer__filename">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                                <span th:if="${primaryAttachment != null}" th:text="${primaryAttachment.originalFilename}">file</span>
-                                <span th:if="${primaryAttachment == null}" th:text="${work.work.externalLink != null ? work.work.externalLink : 'Документ работы'}">—</span>
+                                <span th:text="${activeAttachment.originalFilename}">file</span>
                             </div>
                             <div class="viewer__actions">
-                                <a th:if="${primaryAttachment != null}" th:href="@{/files/work/{id}(id=${primaryAttachment.id})}" target="_blank" class="icon-btn" title="Открыть в новой вкладке">
+                                <a th:href="@{/files/work/{id}(id=${activeAttachment.id})}" target="_blank" class="icon-btn" title="Открыть в новой вкладке">
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
                                 </a>
-                                <a th:if="${primaryAttachment != null}" th:href="@{/files/work/{id}(id=${primaryAttachment.id},disposition='attachment')}" class="icon-btn" title="Скачать">
+                                <a th:href="@{/files/work/{id}(id=${activeAttachment.id},disposition='attachment')}" class="icon-btn" title="Скачать">
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                                 </a>
                             </div>
                         </div>
                         <div class="viewer__body">
-                            <div th:if="${primaryAttachment != null}">
-                                <iframe th:src="@{/files/work/{id}/preview(id=${primaryAttachment.id})}" style="width:100%;height:720px;border:0;"></iframe>
-                            </div>
-                            <div th:if="${primaryAttachment == null and work.work.externalLink != null}">
-                                <p><strong>Ссылка:</strong> <a th:href="${work.work.externalLink}" target="_blank" th:text="${work.work.externalLink}"></a></p>
-                            </div>
-                            <div th:if="${primaryAttachment == null and work.work.externalLink == null and work.work.contentText != null}" th:text="${work.work.contentText}"></div>
-                            <div th:if="${primaryAttachment == null and work.work.externalLink == null and work.work.contentText == null}" class="muted">Работа пустая.</div>
+                            <iframe th:src="@{/files/work/{id}/preview(id=${activeAttachment.id})}" style="width:100%;height:720px;border:0;"></iframe>
                         </div>
-                        <div th:if="${workVoice != null}" class="card mt-3">
-                            <div class="card__title mb-3">🎤 Голосовое сообщение к работе</div>
-                            <audio controls th:src="@{/files/work/{id}(id=${workVoice.id})}" style="width:100%;"></audio>
-                        </div>
+                    </div>
+
+                    <div th:if="${#lists.isEmpty(attachments) and (work.work.externalLink == null or #strings.isEmpty(work.work.externalLink)) and (work.work.contentText == null or #strings.isEmpty(work.work.contentText))}" class="card muted">
+                        Работа пустая.
+                    </div>
+
+                    <div th:if="${workVoice != null}" class="card">
+                        <div class="card__title mb-3">🎤 Голосовое сообщение к работе</div>
+                        <audio controls th:src="@{/files/work/{id}(id=${workVoice.id})}" style="width:100%;"></audio>
                     </div>
                 </div>
 

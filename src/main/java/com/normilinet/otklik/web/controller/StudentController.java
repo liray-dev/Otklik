@@ -95,16 +95,45 @@ public class StudentController {
     @GetMapping("/cycles/{id}/submit")
     public String submitForm(@PathVariable UUID id,
                              @AuthenticationPrincipal CustomUserDetails user,
+                             @org.springframework.web.bind.annotation.RequestParam(value = "file", required = false) UUID activeFileId,
                              Model model) {
         Campaign campaign = campaignService.getCampaignById(id);
         java.util.Optional<Work> existing = workService.findExistingForStudent(id, user.getUsername());
         Work work = existing.orElse(null);
         boolean editable = work == null || workService.isEditable(work);
+
+        java.util.List<com.normilinet.otklik.domain.model.WorkAttachment> all = work != null
+                ? workService.getAttachments(work.getId())
+                : java.util.List.of();
+        java.util.List<com.normilinet.otklik.domain.model.WorkAttachment> documents = all.stream().filter(a -> !a.isVoice()).toList();
+        com.normilinet.otklik.domain.model.WorkAttachment active = null;
+        if (activeFileId != null) {
+            active = documents.stream().filter(a -> a.getId().equals(activeFileId)).findFirst().orElse(null);
+        }
+        if (active == null) {
+            active = documents.stream().findFirst().orElse(null);
+        }
+
+        String revisionComment = null;
+        if (work != null && work.getStatus() == com.normilinet.otklik.domain.enums.WorkStatus.NEEDS_REVISION) {
+            for (WorkAssignment a : assignmentRepository.findAllByWorkId(work.getId())) {
+                if (a.getStatus() == AssignmentStatus.ABANDONED) {
+                    Review r = reviewRepository.findByAssignmentId(a.getId()).orElse(null);
+                    if (r != null && r.getFeedback() != null && !r.getFeedback().isBlank()) {
+                        revisionComment = r.getFeedback();
+                        break;
+                    }
+                }
+            }
+        }
+
         model.addAttribute("campaign", campaign);
         model.addAttribute("existing", work);
-        model.addAttribute("attachments", work != null ? workService.getAttachments(work.getId()) : java.util.List.of());
+        model.addAttribute("attachments", documents);
+        model.addAttribute("activeAttachment", active);
         model.addAttribute("editable", editable);
         model.addAttribute("materials", campaignService.getMaterials(id));
+        model.addAttribute("revisionComment", revisionComment);
         return "student/submit";
     }
 

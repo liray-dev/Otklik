@@ -122,6 +122,7 @@ public class ExpertController {
     @GetMapping("/review/{assignmentId}")
     public String review(@AuthenticationPrincipal CustomUserDetails user,
                          @PathVariable UUID assignmentId,
+                         @RequestParam(value = "file", required = false) UUID activeFileId,
                          Model model) {
         WorkAssignment assignment = assignmentRepository.findById(assignmentId)
                 .orElseThrow(() -> new IllegalArgumentException("Назначение не найдено"));
@@ -131,9 +132,16 @@ public class ExpertController {
         Work work = assignment.getWork();
         Review review = reviewService.getOrCreateDraft(assignmentId, user.getUsername());
 
-        List<WorkAttachment> attachments = workService.getAttachments(work.getId());
-        WorkAttachment primary = attachments.stream().filter(a -> !a.isVoice()).findFirst().orElse(null);
-        WorkAttachment voice = attachments.stream().filter(WorkAttachment::isVoice).findFirst().orElse(null);
+        List<WorkAttachment> all = workService.getAttachments(work.getId());
+        List<WorkAttachment> documents = all.stream().filter(a -> !a.isVoice()).toList();
+        WorkAttachment active = null;
+        if (activeFileId != null) {
+            active = documents.stream().filter(a -> a.getId().equals(activeFileId)).findFirst().orElse(null);
+        }
+        if (active == null) {
+            active = documents.stream().findFirst().orElse(null);
+        }
+        WorkAttachment voice = all.stream().filter(WorkAttachment::isVoice).findFirst().orElse(null);
 
         List<EvaluationCriterion> criteria = campaignService.getCriteriaForCampaign(work.getCampaign().getId());
         Map<UUID, BigDecimal> scores = reviewService.currentScores(review.getId());
@@ -143,8 +151,8 @@ public class ExpertController {
         model.addAttribute("assignment", assignment);
         model.addAttribute("work", asMaskedWork(work));
         model.addAttribute("review", review);
-        model.addAttribute("attachments", attachments);
-        model.addAttribute("primaryAttachment", primary);
+        model.addAttribute("attachments", documents);
+        model.addAttribute("activeAttachment", active);
         model.addAttribute("workVoice", voice);
         model.addAttribute("criteria", criteria);
         model.addAttribute("scoresByCriterion", scores);

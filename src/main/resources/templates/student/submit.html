@@ -27,8 +27,18 @@
             </div>
         </div>
 
+        <div th:if="${campaign.description != null and !#strings.isEmpty(campaign.description)}" class="card mb-3">
+            <div class="card__label mb-2">Описание кампании</div>
+            <div th:text="${campaign.description}" style="white-space:pre-wrap;"></div>
+        </div>
+
         <div th:if="${existing != null and existing.status.name() == 'NEEDS_REVISION'}" class="alert alert--warn">
             Ваша работа была отправлена на доработку рецензентом. Внесите правки и сохраните — она снова уйдёт в очередь.
+        </div>
+
+        <div th:if="${revisionComment != null}" class="card mb-3" style="border-left:3px solid var(--warning);">
+            <div class="card__label mb-2">Комментарий рецензента</div>
+            <div th:text="${revisionComment}" style="white-space:pre-wrap;"></div>
         </div>
         <div th:if="${existing != null and !editable}" class="alert alert--ok">
             Работа уже взята в проверку и больше не может быть изменена.
@@ -70,14 +80,31 @@
 
                     <div class="card">
                         <label class="field__label">Файлы работы</label>
-                        <div th:if="${not #lists.isEmpty(attachments)}" class="stack mt-2" style="gap:6px;">
-                            <div th:each="att : ${attachments}" th:if="${not att.voice}" class="row gap-3">
-                                <a th:href="@{/files/work/{id}(id=${att.id})}" target="_blank" th:text="${att.originalFilename}"></a>
+                        <div th:if="${not #lists.isEmpty(attachments)}" class="row gap-2 mt-2" style="flex-wrap:wrap;">
+                            <span th:each="att : ${attachments}" class="row gap-1">
+                                <a th:href="@{/student/cycles/{cid}/submit(cid=${campaign.id},file=${att.id})}"
+                                   th:classappend="${activeAttachment != null and att.id == activeAttachment.id} ? 'btn--primary' : 'btn--ghost'"
+                                   class="btn btn--sm"
+                                   th:text="${att.originalFilename}">file</a>
                                 <form th:if="${editable}" th:action="@{/student/works/{wid}/attachments/{aid}/delete(wid=${existing.id},aid=${att.id})}" method="post">
                                     <button type="submit" class="btn btn--ghost btn--sm" onclick="return confirm('Удалить файл?')">×</button>
                                 </form>
+                            </span>
+                        </div>
+
+                        <div th:if="${activeAttachment != null}" class="viewer mt-3">
+                            <div class="viewer__head">
+                                <div class="viewer__filename" th:text="${activeAttachment.originalFilename}">file</div>
+                                <div class="viewer__actions">
+                                    <a th:href="@{/files/work/{id}(id=${activeAttachment.id})}" target="_blank" class="icon-btn" title="Открыть в новой вкладке">↗</a>
+                                    <a th:href="@{/files/work/{id}(id=${activeAttachment.id},disposition='attachment')}" class="icon-btn" title="Скачать">↓</a>
+                                </div>
+                            </div>
+                            <div class="viewer__body">
+                                <iframe th:src="@{/files/work/{id}/preview(id=${activeAttachment.id})}" style="width:100%;height:520px;border:0;"></iframe>
                             </div>
                         </div>
+
                         <div th:if="${editable}" id="dropzone" class="dropzone mt-3">
                             <div class="dropzone__icon">📤</div>
                             <div class="dropzone__main">Перетащите файлы сюда</div>
